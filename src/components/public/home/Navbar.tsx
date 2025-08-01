@@ -9,8 +9,9 @@ export function Navbar() {
   const path = usePathname();
   const isActive = (href: string) => {
     return path === href
-      ? "text-navbar-active border-b-2 border-navbar-active "
-      : "hover:text-navbar-hover border-b-2 border-white";
+      ? "text-navbar-active border-b-[1px] border-navbar-underline "
+      : "hover:text-navbar-hover border-b-[1px] border-white" +
+          " select-none pointer-events-none";
   };
   return (
     <nav className="bg-[#ffffff] text-[#1d1d1f] shadow sticky top-0 z-50 font-yekan">
