@@ -1,26 +1,70 @@
 @import "tailwindcss";
+@tailwind utilities;
+
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color: black;
+  direction: rtl;
 }
 
-@theme inline {
+@font-face {
+  font-family: "digikala";
+  src: url("/fonts/digikala.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "yekan";
+  src: url("/fonts/Yekan.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "nastaliq";
+  src: url("/fonts/IranNastaliq.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "bnazanin";
+  src: url("/fonts/b-nazanin.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-navbar-primary: #135029;
+  --color-navbar-secondary: #00A390;
+  --color-navbar-text: #495057;
+  --color-navbar-hover: #135029;
+  --color-navbar-active:#13AF9D;
+
+/* Fonts */
+    --font-digikala: "digikala", Arial, Helvetica, sans-serif;
+  --font-nastaliq: "nastaliq", Arial, Helvetica, sans-serif;
+  --font-bnazanin: "bnazanin", Arial, Helvetica, sans-serif;
+  --font-yekan: "yekan", Arial, Helvetica, sans-serif;
 }
+
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #f5f5f7;
   }
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color:black;
+  font-family: "bnazanin", Arial, Helvetica, sans-serif,"nastaliq", "digikala", sans-serif, 'yekan';
+  direction: rtl;
 }
