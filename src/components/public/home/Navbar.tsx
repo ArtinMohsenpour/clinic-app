@@ -1,21 +1,20 @@
 "use client";
 import Link from "next/link";
-import "./Navbar.css"; // Import the CSS file for styling
+import "./Navbar.css";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { use } from "react";
 
 export function Navbar() {
   const path = usePathname();
   const isActive = (href: string) => {
     return path === href
       ? "text-navbar-active border-b-[1px] border-navbar-underline "
-      : "hover:text-navbar-hover border-b-[1px] border-white" +
-          " select-none pointer-events-none";
+      : "hover:text-navbar-hover border-b-[1px] border-white";
   };
+
   return (
     <nav className="bg-[#ffffff] text-[#1d1d1f] shadow sticky top-0 z-50 font-yekan">
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16 select-none">
         <div className="text-[14px]  min-w-fit font-yekan">
           <Link href="/">
             کلینیک و مرکز دیالیز
@@ -26,8 +25,8 @@ export function Navbar() {
         </div>
         <ul className="hidden md:flex space-x-10  w-full mr-22">
           <li>
-            <Link href="/">
-              <div className={isActive("/")}>خدمات</div>
+            <Link href="/services">
+              <div className={isActive("/services")}>خدمات</div>
             </Link>
           </li>
           <li>
@@ -56,13 +55,20 @@ export function Navbar() {
             </Link>
           </li>
           <li>
-            <Link href="/staff-login">
-              <div className={isActive("/staff-login")}>ورود پرسنل</div>
+            <Link href="/login">
+              <div className={isActive("/login")}>ورود پرسنل</div>
             </Link>
           </li>
         </ul>
-        <div className="min-w-16  min-h-16 relative">
-          <Image src="/assets/logo-asr.png" alt="Clinic Logo" fill />
+        <div className="relative h-16 w-auto items-center justify-center flex">
+          <Image
+            src="/assets/images/logo-asr.png"
+            alt="Clinic Logo"
+            width={0}
+            height={0}
+            sizes="auto"
+            className="h-14 w-auto object-contain"
+          />
         </div>
       </div>
     </nav>

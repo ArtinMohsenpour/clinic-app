@@ -66,6 +66,6 @@
 body {
   background: var(--background);
   color:black;
-  font-family: "bnazanin", Arial, Helvetica, sans-serif,"nastaliq", "digikala", sans-serif, 'yekan';
+  font-family:"yekan", "bnazanin", Arial, Helvetica, sans-serif,"nastaliq", "digikala", sans-serif, 'yekan';
   direction: rtl;
 }

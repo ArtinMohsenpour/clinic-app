@@ -17,7 +17,11 @@ export default function RootLayout({
     <html lang="fa" dir="rtl">
       <body dir="rtl" className="flex flex-col min-h-screen">
         <Navbar />
-        <main className="flex-grow">{children}</main>
+        <main className="flex-grow">
+          <div className="max-w-[1280px] mx-auto py-3 px-4 sm:px-6 lg:px-8">
+            {children}
+          </div>
+        </main>
         <Footer />
       </body>
     </html>
