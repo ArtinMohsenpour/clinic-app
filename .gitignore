@@ -39,3 +39,46 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+# Prisma-related
+/prisma/dev.db
+/prisma/dev.db-journal
+/prisma/migrations/
+.prisma/
+*.sqlite
+*.sqlite-journal
+
+# VS Code settings
+.vscode/
+
+# Mac system files
+*.DS_Store
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Local environment
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build output (already included but for clarity)
+.next/
+out/
+build/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Optional: compiled Prisma client (if generated outside src/)
+@prisma/client/
+
+# Optional: ignore your seed file if it's not meant for production
+prisma/seed.ts
+
+# Optional: generated types or utils (if you don’t want to commit them)
+/src/generated/

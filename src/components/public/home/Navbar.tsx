@@ -3,13 +3,36 @@ import Link from "next/link";
 import "./Navbar.css";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation"; // ✅ App Router
+import { useEffect, useState } from "react";
 
 export function Navbar() {
-  const path = usePathname();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+
   const isActive = (href: string) => {
-    return path === href
-      ? "text-navbar-active border-b-[1px] border-navbar-underline "
+    return pathname === href
+      ? "text-navbar-active border-b-[1px] border-navbar-active "
       : "hover:text-navbar-hover border-b-[1px] border-white";
+  };
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const session = await authClient.getSession();
+      if(session.data){
+        setIsLoggedIn(true);
+      }
+    };
+    checkSession();
+  }, [isLoggedIn]); 
+  
+  const logoutHandle = async () => {
+    await authClient.signOut();
+    setIsLoggedIn(false);
+    router.refresh();
+    router.push("/");
   };
 
   return (
@@ -54,11 +77,29 @@ export function Navbar() {
               <div className={isActive("/contact")}>تماس با ما</div>
             </Link>
           </li>
-          <li>
-            <Link href="/login">
-              <div className={isActive("/login")}>ورود پرسنل</div>
+          {!isLoggedIn && (
+            <li>
+              <Link href="/login">
+                <div className={isActive("/login")}>ورود پرسنل</div>
+              </Link>
+            </li>
+          )}
+
+          {/* Show logout button if logged in */}
+          {isLoggedIn && (
+            <> 
+            <li>
+            <Link href="/admin">
+            <div className={isActive("/admin")}>‍‍پنل کاربری</div>
             </Link>
-          </li>
+            </li>
+            <li>
+              <button onClick={logoutHandle} className="border-2 text-white border-navbar-primary rounded-2xl px-2 bg-navbar-active hover:bg-navbar-secondary ">
+                <div >خروج از سایت</div>
+              </button>
+            </li>
+            </>
+          )}
         </ul>
         <div className="relative h-16 w-auto items-center justify-center flex">
           <Image

@@ -7,4 +7,5 @@ export interface ValidationResult {
 export interface LoginFormValues {
   email: string;
   password: string;
+  name: string;
 }

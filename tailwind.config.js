@@ -10,8 +10,8 @@ const config = {
         "navbar-primary": "#f8f9fa",
         "navbar-secondary": "#343a40",
         "navbar-text": "#495057",
-        "navbar-hover": "#f8f9fa",
-        "navbar-active": "#ced4da",
+        "navbar-hover": "#343a40",
+        "navbar-active": "#343a40",
       },
       fontFamily: {
         digikala: ["digikala", "sans-serif"],
