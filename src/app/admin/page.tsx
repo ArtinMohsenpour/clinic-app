@@ -1,148 +1,30 @@
-export default function adminDashboard() {
+// admin/page.tsx
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+export const dynamic = "force-dynamic";
+
+export default async function AdminDashboard() {
+  const raw = await headers();
+  const plain = new Headers(raw as HeadersInit); // convert to a real Headers
+  const session = await auth.api.getSession({ headers: plain });
+  const user = session?.user;
+  if (!user) redirect("/login");
+
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
-      این صفحه درباره admin dashboard است
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
-      <div className="text-center text-2xl font-bold">
-        درباره admin dashboard Hi
-      </div>
+    <div className="p-8">
+      <h1 className="text-2xl font-bold">داشبورد مدیریت</h1>
+      <p>
+        <strong>نام:</strong> {user.name}
+      </p>
+      <p>
+        <strong>ایمیل:</strong> {user.email}
+      </p>
+      <form action="/api/auth/sign-out" method="POST" className="mt-4">
+        <button className="bg-red-500 text-white px-4 py-2 rounded">
+          خروج
+        </button>
+      </form>
     </div>
   );
 }

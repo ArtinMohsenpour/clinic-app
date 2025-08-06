@@ -8,10 +8,21 @@ export function validateEmail(email: string): ValidationResult {
   return { isValid: true, error: null };
 }
 
-export function validatePassword(password: string): ValidationResult {
+// For login (basic: length only)
+export function validateLoginPassword(password: string): ValidationResult {
+  if (!password) return { isValid: false, error: "رمز عبور الزامی است." };
+  if (password.length < 8 || password.length > 24)
+    return { isValid: false, error: "رمز عبور باید بین ۸ تا ۲۴ کاراکتر باشد." };
+  return { isValid: true, error: null };
+}
+
+// For registration / CMS user creation (strict)
+export function validateNewPassword(password: string): ValidationResult {
   if (!password) return { isValid: false, error: "رمز عبور الزامی است." };
   if (password.length < 8)
     return { isValid: false, error: "رمز عبور باید حداقل ۸ کاراکتر باشد." };
+  if (password.length > 24)
+    return { isValid: false, error: "رمز عبور نمی‌تواند بیشتر از ۲۴ کاراکتر باشد." };
   if (!/[0-9]/.test(password))
     return { isValid: false, error: "رمز عبور باید شامل حداقل یک عدد باشد." };
   if (!/[!@#$%^&*(),.?\":{}|<>]/.test(password))
@@ -21,3 +32,4 @@ export function validatePassword(password: string): ValidationResult {
     };
   return { isValid: true, error: null };
 }
+
