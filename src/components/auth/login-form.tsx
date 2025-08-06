@@ -13,10 +13,7 @@ export function LoginForm() {
   });
   
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const router = useRouter()
+  const [error, setError] = useState("");
 
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -32,27 +29,24 @@ export function LoginForm() {
   };
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError('')
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     try {
       const { data, error } = await authClient.signIn.email({
         email: form.email,
         password: form.password,
-        callbackURL: "/admin"
-      })
+        callbackURL: "/admin",
+      });
 
       if (error) {
-        setError(error.message || 'Failed to sign in')
-      } else {
-        setSuccess('Successfully signed in!')
-        // router.push('/admin')
+        setError("رمز عبور یا ایمیل اشتباه است.");
       }
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError("An unexpected error occurred");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   };
 
@@ -78,8 +72,8 @@ export function LoginForm() {
                 emailError
                   ? "border-red-500 focus:ring-red-300"
                   : "border-gray-300 focus:ring-navbar-secondary"
-              }`}
-              placeholder="you@example.com"
+              } ltr-input`}
+              placeholder="username@asr-salamat.ir"
               value={form.email}
               onChange={(e) => handleEmailChange(e.target.value)}
               required
@@ -98,7 +92,7 @@ export function LoginForm() {
                 passwordError
                   ? "border-red-500 focus:ring-red-300"
                   : "border-gray-300 focus:ring-navbar-secondary"
-              }`}
+              } ltr-input`}
               placeholder="••••••••"
               value={form.password}
               onChange={(e) => handlePasswordChange(e.target.value)}
@@ -112,7 +106,7 @@ export function LoginForm() {
             type="submit"
             className="w-full bg-navbar-secondary text-white py-2 rounded hover:bg-navbar-hover transition"
           >
-            ورود
+            {isLoading ? "در حال ورود ..." : "ورود"}
           </button>
         </form>
         <div className="flex justify-between items-center mt-6 text-sm">

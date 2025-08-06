@@ -12,7 +12,7 @@ export default async function AdminDashboard() {
   if (!user) redirect("/login");
 
   return (
-    <div className="p-8">
+    <div className="p-8 w-full bg-[#ffffff] rounded-lg shadow-md h-full">
       <h1 className="text-2xl font-bold">داشبورد مدیریت</h1>
       <p>
         <strong>نام:</strong> {user.name}
