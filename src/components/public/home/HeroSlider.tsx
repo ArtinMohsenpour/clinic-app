@@ -56,7 +56,7 @@ export default function HeroSlider() {
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
 
   return (
-    <section className="relative w-full h-[600px] overflow-hidden rounded-lg">
+    <section className="relative w-full h-[600px] overflow-hidden rounded-lg ">
       {slides.map((slide, index) => (
         <div
           key={slide.id}

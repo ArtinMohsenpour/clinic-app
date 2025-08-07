@@ -74,3 +74,20 @@ export interface AuthUser {
 export interface AppSession extends Session {
   user: AuthUser;
 }
+
+export interface User  {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  image?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  isActive?: boolean; // if you have this column
+  createdAt: string;   // converted to ISO string before sending to client
+  updatedAt: string;   // converted to ISO string before sending to client
+  role?: {
+    id: string;
+    name: string;
+  } | null;
+};

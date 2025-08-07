@@ -21,7 +21,7 @@ export default async function RootLayout({
 
   return (
     <html lang="fa" dir="rtl">
-      <body dir="rtl" className="flex flex-col min-h-screen">
+      <body dir="rtl" className="flex flex-col min-h-screen ">
         <Navbar user={user} />
         <main className="flex-grow">
           <div className="max-w-[1280px] mx-auto  px-4 sm:px-6 ">

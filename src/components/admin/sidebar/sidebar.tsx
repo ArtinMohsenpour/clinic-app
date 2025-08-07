@@ -1,49 +1,56 @@
-"use client";
-import { authClient } from "@/lib/auth-client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import UserInfo from "./userInfo";
+import Link from "next/link";
+import { User } from "@/config/types/auth/types";
 
-export default function Sidebar({
-  user,
-}: {
-  user: { name: string; email: string };
-}) {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const router = useRouter();
-
-  const logoutHandle = async () => {
-    await authClient.signOut();
-    setIsLoggedIn(false);
-    window.location.href = "/";
-    router.push("/");
-  };
-
+export default function Sidebar({ user }: { user: User }) {
   return (
     <aside className="w-64 bg-white sticky shadow-md flex flex-col h-full">
       {/* Top section: User info */}
-      <div className="p-6 ">
-        <h1 className="text-2xl font-bold mb-2">پنل مدیریت</h1>
-        <div className="mb-4">
-          <p className="text-gray-700">
-            <strong>کاربر:</strong> {user.name}
-          </p>
-        </div>
-        <button
-          onClick={logoutHandle}
-          className="w-fit text-sm bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition"
-        >
-          خروج از سایت
-        </button>
-      </div>
+      <UserInfo user={user} />
+      <hr className="mx-4 border-0 h-[2px] bg-navbar-hover" />
 
       {/* Bottom section: Navigation */}
-      <nav className="flex-1 p-6">
+      <nav className="flex-1 py-4 px-6">
         <ul className="space-y-3">
-          <li className="hover:text-navbar-primary cursor-pointer">داشبورد</li>
-          <li className="hover:text-navbar-primary cursor-pointer">نوبت‌ها</li>
-          <li className="hover:text-navbar-primary cursor-pointer">پروفایل</li>
-          <li className="hover:text-navbar-primary cursor-pointer">تنظیمات</li>
-          <li className="hover:text-navbar-primary cursor-pointer">CMS</li>
+          <Link
+            href="/admin"
+            className="hover:text-navbar-primary cursor-pointer"
+          >
+            داشبورد
+          </Link>
+
+          <li>
+            <a
+              href="admin/appointments"
+              className="hover:text-navbar-primary cursor-pointer"
+            >
+              نوبت‌ها
+            </a>
+          </li>
+          <li>
+            <a
+              href="admin/profile"
+              className="hover:text-navbar-primary cursor-pointer"
+            >
+              پروفایل
+            </a>
+          </li>
+          <li>
+            <a
+              href="admin/settings"
+              className="hover:text-navbar-primary cursor-pointer"
+            >
+              تنظیمات
+            </a>
+          </li>
+          <li>
+            <a
+              href="admin/cms"
+              className="hover:text-navbar-primary cursor-pointer"
+            >
+              CMS
+            </a>
+          </li>
         </ul>
       </nav>
     </aside>

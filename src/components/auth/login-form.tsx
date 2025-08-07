@@ -44,14 +44,17 @@ export function LoginForm() {
         setError("رمز عبور یا ایمیل اشتباه است.");
       }
     } catch (err) {
-      setError("An unexpected error occurred");
+      setError(
+        "An unexpected error occurred" +
+          (err instanceof Error ? `: ${err.message}` : "")
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex items-start justify-center pt-16">
+    <div className="flex items-start justify-center pt-16 select-none">
       <div className="bg-white shadow-lg rounded-lg w-full max-w-md p-8">
         <h1 className="text-3xl font-bold text-center mb-6 text-navbar-primary">
           ورود به پنل مدیریت
