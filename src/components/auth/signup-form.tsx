@@ -5,12 +5,14 @@ import { authClient } from "@/lib/auth-client";
 import { validateEmail, validateNewPassword } from "@/lib/validators";
 import { useRouter } from "next/navigation";
 import { SignUpFormValues } from "@/config/types/auth/types";
+import type { RoleId } from "@/config/constants/roles";
 
 interface Props {
-  roles: { id: string; name: string }[];
+  roles: { id: string; name: string }[]; // (was RoleId)
 }
 
 export function SignUpForm({ roles = [] }: Props) {
+  const defaultRole = roles[0]?.id as RoleId | undefined;
   const [form, setForm] = useState<SignUpFormValues>({
     firstName: "",
     lastName: "",
@@ -19,7 +21,7 @@ export function SignUpForm({ roles = [] }: Props) {
     password: "",
     phone: "",
     address: "",
-    role: roles.length > 0 ? roles[0].id : "",
+    role: defaultRole ?? "receptionist",
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -41,15 +43,18 @@ export function SignUpForm({ roles = [] }: Props) {
     e.preventDefault();
     setError("");
     setSuccess("");
+    console.log("Submitting form:", form);
 
-    // Prevent submission if email/password are invalid
     if (emailError || passwordError) {
       setError("لطفاً خطاهای فرم را برطرف کنید.");
       return;
     }
+    if (!form.role) {
+      setError("نقش را انتخاب کنید.");
+      return;
+    }
 
     setIsLoading(true);
-
     try {
       const { error } = await authClient.signUp.email({
         email: form.email,
@@ -57,27 +62,50 @@ export function SignUpForm({ roles = [] }: Props) {
         name: `${form.firstName} ${form.lastName}`,
         callbackURL: "/admin",
       });
+      router.replace("/admin");
+      router.refresh();
 
       if (error) {
         setError("ثبت‌نام ناموفق بود، کاربر ممکن است وجود داشته باشد.");
-      } else {
-        setSuccess("ثبت‌نام با موفقیت انجام شد!");
-        // Reset form
-        setForm({
-          firstName: "",
-          lastName: "",
-          username: "",
-          email: "",
-          password: "",
-          phone: "",
-          address: "",
-          role: roles.length > 0 ? roles[0].id : "",
-        });
-        // Redirect after short delay
-        router.push("/admin");
+        return;
       }
-    } catch (err) {
-      setError("یک خطای غیرمنتظره رخ داد");
+
+      const res = await fetch("/api/users/complete-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email, // or userId if you have it
+          name: `${form.firstName} ${form.lastName}`,
+          phone: form.phone ?? "",
+          address: form.address ?? "",
+          role: form.role, // e.g., "finance_manager"
+        }),
+      });
+
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j?.error || "خطا در ذخیرهٔ اطلاعات پروفایل");
+      }
+
+      setSuccess("ثبت‌نام با موفقیت انجام شد!");
+      setForm({
+        firstName: "",
+        lastName: "",
+        username: "",
+        email: "",
+        password: "",
+        phone: "",
+        address: "",
+        role: (roles[0]?.id as RoleId) ?? "receptionist",
+      });
+
+      router.push("/admin");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || "یک خطای غیرمنتظره رخ داد");
+      } else {
+        setError("یک خطای غیرمنتظره رخ داد");
+      }
     } finally {
       setIsLoading(false);
     }

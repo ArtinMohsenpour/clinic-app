@@ -19,8 +19,8 @@ export function Navbar({ user }: { user?: { name: string } }) {
 
   const logoutHandle = async () => {
     await authClient.signOut();
+    router.replace("/");
     router.refresh();
-    router.push("/");
   };
 
   return (
