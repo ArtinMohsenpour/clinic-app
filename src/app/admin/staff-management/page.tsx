@@ -62,7 +62,10 @@ export default function StaffManagementPage() {
   }
 
   return (
-    <div dir="rtl" className="p-6 space-y-5 bg-white">
+    <div
+      dir="rtl"
+      className="p-6 pb-12 space-y-5 bg-white rounded-2xl shadow-sm"
+    >
       {/* هدر */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between select-none">
         <div>
@@ -159,9 +162,10 @@ export default function StaffManagementPage() {
         <table className="w-full text-sm">
           <thead className="bg-navbar-primary">
             <tr className="text-right text-white">
-              <th className="px-4 py-3 font-medium">نام</th>
+              <th className="px-4 py-3 font-medium"></th>
+              <th className="pl-4 py-3 font-medium">نام</th>
               <th className="px-4 py-3 font-medium">ایمیل</th>
-              <th className="px-4 py-3 font-medium">شماره تلفن</th>
+              <th className="px-4 py-3 font-medium ">شماره تلفن</th>
               <th className="px-4 py-3 font-medium">نقش‌ها</th>
               <th className="px-4 py-3 font-medium">وضعیت</th>
               <th className="px-4 py-3 font-medium text-center">ادیت</th>
@@ -195,7 +199,10 @@ export default function StaffManagementPage() {
                   idx % 2 ? "bg-white" : "bg-gray-50/40"
                 } hover:bg-gray-100 `}
               >
-                <td className="px-4 py-3 font-medium text-navbar-primary select-text">
+                <td className="px-3 py-3 font-medium text-navbar-primary select-none">
+                  {idx + 1}
+                </td>
+                <td className="pl-4 py-3 font-medium text-navbar-primary select-text">
                   {u.name}
                 </td>
                 <td className="px-4 py-3">
@@ -206,7 +213,7 @@ export default function StaffManagementPage() {
                     {u.email}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-navbar-primary  select-text ltr-input">
+                <td className="px-4 py-3 text-navbar-primary  select-text ltr-input text-right">
                   {u.phone?.trim()?.length ? u.phone : "—"}
                 </td>
                 <td className="px-4 py-3">
@@ -244,7 +251,7 @@ export default function StaffManagementPage() {
                 <td className="px-4 py-3 text-left">
                   <Link
                     href={`/admin/staff-management/update-user/${u.id}`}
-                    className="inline-block px-3 py-1.5 rounded-lg border border-navbar-active bg-white hover:bg-navbar-hover"
+                    className="inline-block px-3 py-1.5 rounded-lg border border-navbar-active bg-white hover:bg-navbar-hover hover:text-white"
                   >
                     ویرایش
                   </Link>

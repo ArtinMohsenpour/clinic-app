@@ -12,7 +12,6 @@ export async function PUT(
   if (!session?.user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // RBAC
   const can = await prisma.user.findFirst({
     where: {
       id: session.user.id,
@@ -26,19 +25,20 @@ export async function PUT(
   });
   if (!can) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  // Parse body
   const body = await req.json();
   const {
-    name,
+    firstName, // from UI (optional)
+    lastName, // from UI (optional)
     email,
-    role, // role key
+    role,
     isActive,
-    password, // optional: reset
+    password,
     phone,
     address,
-    mustChangePassword, // optional toggle
+    mustChangePassword,
   } = body as {
-    name?: string;
+    firstName?: string;
+    lastName?: string;
     email?: string;
     role?: string;
     isActive?: boolean;
@@ -48,16 +48,33 @@ export async function PUT(
     mustChangePassword?: boolean;
   };
 
+  // combine to "name" only if either part was provided
+  const nameCombined =
+    firstName !== undefined || lastName !== undefined
+      ? `${(firstName ?? "").trim()} ${(lastName ?? "").trim()}`.trim()
+      : undefined;
+
   const newEmail = email?.toLowerCase();
 
-  // Use a transaction so user/roles/account updates stay in sync
+  if (newEmail) {
+    const exists = await prisma.user.findFirst({
+      where: { email: newEmail, NOT: { id: params.id } },
+      select: { id: true },
+    });
+    if (exists) {
+      return NextResponse.json(
+        { error: "این ایمیل قبلاً ثبت شده است." },
+        { status: 409 }
+      );
+    }
+  }
+
   await prisma.$transaction(async (tx) => {
-    // 1) Update scalar fields on User
     const updatedUser = await tx.user.update({
       where: { id: params.id },
       data: {
-        ...(name !== undefined ? { name } : {}),
-        ...(newEmail ? { email: newEmail } : {}),
+        ...(nameCombined !== undefined ? { name: nameCombined } : {}), // <-- map to DB
+        ...(newEmail !== undefined ? { email: newEmail } : {}),
         ...(typeof isActive === "boolean" ? { isActive } : {}),
         ...(phone !== undefined ? { phone } : {}),
         ...(address !== undefined ? { address } : {}),
@@ -69,44 +86,36 @@ export async function PUT(
       select: { id: true, email: true },
     });
 
-    // 2) Update single role link (clear then set)
     if (role) {
       const roleRow = await tx.role.findUnique({ where: { key: role } });
       if (!roleRow) throw new Error("Invalid role");
-
       await tx.userRole.deleteMany({ where: { userId: updatedUser.id } });
       await tx.userRole.create({
         data: { userId: updatedUser.id, roleId: roleRow.id },
       });
     }
 
-    // 3) Optional password reset and/or email change on credentials account
     if (password || newEmail) {
-      // Find the credentials account for this user
       const cred = await tx.account.findFirst({
-        where: { userId: updatedUser.id, providerId: "credentials" },
+        where: { userId: updatedUser.id, providerId: "credential" },
       });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updates: Record<string, any> = { updatedAt: new Date() };
-
-      if (newEmail) {
-        updates.accountId = newEmail; // keep accountId in sync with new email
-      }
-
-      if (password && password.length >= 8) {
+      if (newEmail) updates.accountId = newEmail;
+      if (password) {
+        if (password.length < 8) throw new Error("Password too short");
         updates.password = await bcrypt.hash(password, 12);
       }
 
       if (cred) {
         await tx.account.update({ where: { id: cred.id }, data: updates });
       } else {
-        // Create if missing (e.g., migrated user)
         await tx.account.create({
           data: {
-            id: crypto.randomUUID(),
-            providerId: "credentials",
-            accountId: newEmail ?? updatedUser.email, // fallback to current email
+            id: crypto.randomUUID(), // <-- must be INSIDE data
+            providerId: "credential",
+            accountId: newEmail ?? updatedUser.email,
             userId: updatedUser.id,
             password: updates.password ?? undefined,
             createdAt: new Date(),
@@ -118,4 +127,42 @@ export async function PUT(
   });
 
   return NextResponse.json({ ok: true });
+}
+
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await auth.api.getSession({ headers: req.headers });
+  if (!session?.user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const can = await prisma.user.findFirst({
+    where: {
+      id: session.user.id,
+      roles: {
+        some: {
+          role: { key: { in: Array.from(STAFF_MANAGEMENT_ALLOWED_ROLES) } },
+        },
+      },
+    },
+    select: { id: true },
+  });
+  if (!can) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const user = await prisma.user.findUnique({
+    where: { id: params.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      address: true,
+      isActive: true,
+      image: true, // if you have it; safe to keep
+    },
+  });
+
+  if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json(user);
 }

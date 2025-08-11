@@ -11,7 +11,7 @@ export const revalidate = 0;
 
 const KEY_SET = new Set<RoleId>(ROLES.map((r) => r.id) as RoleId[]);
 
-export default async function Page() {
+export default async function CreateUserPage() {
   const raw = await headers();
   const session = await auth.api.getSession({ headers: raw });
   if (!session?.user) redirect("/login");

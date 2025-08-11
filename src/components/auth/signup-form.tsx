@@ -24,6 +24,7 @@ export default function SignupForm({
     roles: [] as string[], // <- NEW: selected role IDs
     imageFile: null as File | null, // <- optional avatar (local preview only)
   });
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // ---- ui state
   const [allRoles, setAllRoles] = useState<RoleOption[]>(rolesProp ?? []);
@@ -31,10 +32,22 @@ export default function SignupForm({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
+  const [touched, setTouched] = useState({
+    firstName: false,
+    lastName: false,
+    email: false,
+    password: false,
+    confirmPassword: false,
+    roles: false,
+  });
 
   // ---- validation
   const emailError = validateEmail(form.email).error ?? null;
   const passwordError = validateNewPassword(form.password).error ?? null;
+  const confirmPasswordError =
+    form.password && confirmPassword && confirmPassword !== form.password
+      ? "رمز عبور و تکرار آن یکسان نیست."
+      : null;
   const nameError =
     !form.firstName.trim() || !form.lastName.trim()
       ? "نام و نام خانوادگی الزامی است."
@@ -42,14 +55,32 @@ export default function SignupForm({
   const rolesError =
     form.roles.length === 0 ? "حداقل یک نقش را انتخاب کنید." : null;
 
+  // only show if touched
+  const showNameError =
+    touched.firstName || touched.lastName ? nameError : null;
+  const showEmailError = touched.email ? emailError : null;
+  const showPasswordError = touched.password ? passwordError : null;
+  const showConfirmPasswordError = touched.confirmPassword
+    ? confirmPasswordError
+    : null;
+  const showRolesError = touched.roles ? rolesError : null;
+
   const submitDisabled = useMemo(
     () =>
       isLoading ||
       !!emailError ||
       !!passwordError ||
+      !!confirmPasswordError ||
       !!nameError ||
       !!rolesError,
-    [isLoading, emailError, passwordError, nameError, rolesError]
+    [
+      isLoading,
+      emailError,
+      passwordError,
+      confirmPasswordError,
+      nameError,
+      rolesError,
+    ]
   );
 
   // ---- load roles if not passed as prop
@@ -163,69 +194,96 @@ export default function SignupForm({
   };
 
   return (
-    <div className="flex items-start justify-center pt-16 mb-20">
-      <div className="bg-white shadow-lg rounded-lg w-full max-w-2xl p-8">
-        <h1 className="text-3xl font-bold text-center mb-6 text-navbar-primary">
+    <div className="p-6 pb-12 bg-gradient-to-b from-white to-gray-50 rounded-2xl shadow-md ring-1 ring-gray-100 select-none">
+      <div>
+        <h1 className="text-3xl font-extrabold text-center mb-6 text-navbar-primary tracking-tight">
           ایجاد کاربر جدید
         </h1>
 
         {error && <Banner kind="error" text={error} />}
         {success && <Banner kind="success" text={success} />}
 
-        <form onSubmit={handleSignUp} className="space-y-5">
-          {/* name */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field
-              label="نام"
-              value={form.firstName}
-              onChange={(v) => handleChange("firstName", v)}
-              required
-            />
-            <Field
-              label="نام خانوادگی"
-              value={form.lastName}
-              onChange={(v) => handleChange("lastName", v)}
-              required
-            />
-          </div>
-          {nameError && <Hint text={nameError} />}
+        <form onSubmit={handleSignUp} className="space-y-6 ">
+          {/* Primary details card */}
+          <div className="rounded-2xl border border-gray-100 bg-background-gray p-4 md:p-6 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ">
+              <Field
+                label="نام و نام خانوادگی"
+                value={form.firstName}
+                onChange={(v) => handleChange("firstName", v)}
+                onBlur={() => setTouched((t) => ({ ...t, firstName: true }))}
+                required
+                inputProps={{ placeholder: "مثلاً علی" }}
+              />
+              <Field
+                label="ایمیل"
+                value={form.email}
+                onChange={(v) => handleChange("email", v)}
+                onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+                error={showEmailError ?? undefined}
+                required
+                inputProps={{
+                  type: "email",
+                  inputMode: "email",
+                  dir: "ltr",
+                  lang: "en",
+                  placeholder: "username@example.com",
+                  autoComplete: "email",
+                }}
+              />
+            </div>
+            {showNameError && <Hint text={showNameError} />}
 
-          {/* contact */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ltr-input">
-            <Field
-              label="ایمیل"
-              value={form.email}
-              onChange={(v) => handleChange("email", v)}
-              error={emailError ?? undefined}
-              required
-              inputProps={{
-                type: "email",
-                inputMode: "email",
-                dir: "ltr",
-                lang: "en",
-              }}
-            />
-            <Field
-              label="رمز عبور"
-              value={form.password}
-              onChange={(v) => handleChange("password", v)}
-              error={passwordError ?? undefined}
-              required
-              inputProps={{ type: "password", autoComplete: "new-password" }}
-            />
-          </div>
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 ">
+              <Field
+                label="رمز عبور"
+                value={form.password}
+                onChange={(v) => handleChange("password", v)}
+                onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+                error={showPasswordError ?? undefined}
+                required
+                inputProps={{
+                  type: "password",
+                  autoComplete: "new-password",
+                  placeholder: "حداقل ۸ کاراکتر قوی",
+                }}
+              />
+              <Field
+                label="تکرار رمز عبور"
+                value={confirmPassword}
+                onChange={(v) => setConfirmPassword(v)}
+                onBlur={() =>
+                  setTouched((t) => ({ ...t, confirmPassword: true }))
+                }
+                error={showConfirmPasswordError ?? undefined}
+                required
+                inputProps={{
+                  type: "password",
+                  autoComplete: "new-password",
+                  placeholder: "تکرار رمز عبور",
+                }}
+              />
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field
-              label="تلفن (اختیاری)"
-              value={form.phone}
-              onChange={(v) => handleChange("phone", v)}
-            />
-            <Field
-              label="آدرس (اختیاری)"
-              value={form.address}
-              onChange={(v) => handleChange("address", v)}
-            />
+            {/* NEW: Confirm password */}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Keep layout balanced; add phone next to it */}
+              <Field
+                label="آدرس (اختیاری)"
+                value={form.address}
+                onChange={(v) => handleChange("address", v)}
+                inputProps={{ placeholder: "کوچه، خیابان، شهر..." }}
+              />
+              <Field
+                label="تلفن (اختیاری)"
+                value={form.phone}
+                onChange={(v) => handleChange("phone", v)}
+                inputProps={{
+                  placeholder: "09xxxxxxxxx",
+                  inputMode: "tel",
+                }}
+              />
+            </div>
           </div>
 
           {/* roles */}
@@ -237,15 +295,15 @@ export default function SignupForm({
                 نقشی برای انتخاب وجود ندارد.
               </p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-background-gray p-4 rounded-lg shadow-sm">
                 {allRoles.map((r, i) => {
                   const checked = form.roles.includes(r.id);
                   return (
                     <label
                       key={r.id}
-                      className="flex items-center justify-between gap-2 border rounded-lg px-3 py-2 hover:bg-gray-50"
+                      className="flex items-center text-gray-800 justify-between gap-2 border rounded-lg px-3 py-2 hover:bg-cms-secondary hover:text-white transition cursor-pointer"
                     >
-                      <span className="text-gray-800">
+                      <span className="">
                         {i + 1}. {r.name}
                       </span>
                       <input
@@ -258,7 +316,7 @@ export default function SignupForm({
                 })}
               </div>
             )}
-            {rolesError && <Hint text={rolesError} />}
+            {showRolesError && <Hint text={showRolesError} />}
           </div>
 
           {/* avatar (local preview only) */}
@@ -276,14 +334,15 @@ export default function SignupForm({
               setPreview(null);
             }}
           />
-
-          <button
-            type="submit"
-            disabled={submitDisabled}
-            className="w-full bg-navbar-secondary text-white py-2 rounded hover:bg-navbar-hover transition disabled:opacity-60"
-          >
-            {isLoading ? "در حال ایجاد..." : "ایجاد کاربر"}
-          </button>
+          <div className="flex justify-center mt-6 w-full">
+            <button
+              type="submit"
+              disabled={submitDisabled}
+              className="w-fit mx-auto items-center justify-center text-center px-20 py-2 bg-navbar-secondary text-white rounded hover:bg-navbar-hover transition disabled:opacity-60"
+            >
+              {isLoading ? "در حال ایجاد..." : "ایجاد کاربر"}
+            </button>
+          </div>
         </form>
       </div>
     </div>
@@ -296,6 +355,7 @@ function Field({
   label,
   value,
   onChange,
+  onBlur,
   error,
   required,
   inputProps,
@@ -303,23 +363,27 @@ function Field({
   label: string;
   value: string;
   onChange: (v: string) => void;
+  onBlur?: () => void; // NEW
   error?: string;
   required?: boolean;
   inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
 }) {
   return (
-    <div>
-      <label className="block text-md font-medium text-gray-700 mb-1">
+    <div className="group">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
         {label} {required ? <span className="text-red-500">*</span> : null}
       </label>
       <input
-        className={`w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 ${
+        className={`w-full rounded-xl border bg-white px-3 py-2 outline-none transition focus:ring-2 ${
+          ["email", "tel"].includes(inputProps?.type || "") ? "ltr-input" : ""
+        } ${
           error
             ? "border-red-500 focus:ring-red-300"
             : "border-gray-300 focus:ring-navbar-secondary"
         }`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         {...inputProps}
       />
       {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
