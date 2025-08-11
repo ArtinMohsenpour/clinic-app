@@ -19,7 +19,7 @@ export default function Sidebar({ user }: { user: User }) {
 
   return (
     <aside
-      className="w-64 bg-white sticky top-0 shadow-md flex flex-col h-screen select-none"
+      className="w-64 bg-white sticky top-0 shadow-md flex flex-col h-fit select-none pb-12"
       dir="rtl"
     >
       <UserInfo user={user} />

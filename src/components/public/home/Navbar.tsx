@@ -84,7 +84,7 @@ export function Navbar({ user }: { user?: { name: string } }) {
               <li>
                 <button
                   onClick={logoutHandle}
-                  className="border-2 text-white border-navbar-primary rounded-2xl px-2 py-[2px] bg-navbar-active hover:bg-navbar-secondary cursor-pointer transition duration-300"
+                  className="border-2 text-white border-navbar-primary rounded-2xl px-2 py-[2px] bg-navbar-primary hover:bg-navbar-secondary cursor-pointer transition duration-300"
                 >
                   <div>خروج از سایت</div>
                 </button>

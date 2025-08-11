@@ -73,7 +73,7 @@ export default async function AdminLayout({
 
   return (
     <div className="flex h-dvh overflow-hidden bg-gray-100">
-      <aside className="sticky top-0 h-dvh shrink-0">
+      <aside className="h-fit sticky top-0">
         <div className="h-full w-64 bg-white shadow-md no-scrollbar overflow-y-auto">
           <Sidebar user={userForClient} />
         </div>
