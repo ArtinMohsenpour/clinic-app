@@ -1,6 +1,8 @@
 // lib/types.ts
 import { Session } from "better-auth";
+import type { RoleId } from "@/config/constants/roles";
 
+// ----- Auth / forms -----
 export interface LoginInput {
   email: string;
   password: string;
@@ -13,6 +15,7 @@ export interface RegisterInput {
   phone: string;
   address: string;
 }
+
 export interface CreateUserValues {
   firstName: string;
   lastName: string;
@@ -21,8 +24,9 @@ export interface CreateUserValues {
   password: string;
   phone?: string;
   address?: string;
-  role: string;
+  role: RoleId; // ✅ use RoleId
 }
+
 export interface SignUpFormValues {
   firstName: string;
   lastName: string;
@@ -31,7 +35,7 @@ export interface SignUpFormValues {
   password: string;
   phone?: string;
   address?: string;
-  role: string;
+  role: RoleId; // ✅ use RoleId
 }
 
 export interface ValidationResult {
@@ -44,27 +48,22 @@ export interface LoginFormValues {
   password: string;
 }
 
-export type UserRole =
-  | "admin"
-  | "ceo"
-  | "manager"
-  | "internal_manager"
-  | "doctor"
-  | "nurse"
-  | "receptionist"
-  | "content_creator"
-  | "it_manager";
+// ✅ Remove the ad-hoc UserRole union; rely on RoleId everywhere.
 
+// ----- Domain models carried in session / UI -----
 export interface AuthUser {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
-  roleId: string;
+
+  // If you keep both, type them consistently:
+  roleId: RoleId; // ✅ strongly-typed
   role: {
-    id: string;
-    name: UserRole;
+    id: RoleId; // ✅ strongly-typed
+    name: string; // Persian label from ROLE_LABEL[role.id]
   };
+
   isActive: boolean;
   lastLogin?: Date;
   createdAt: Date;
@@ -73,4 +72,22 @@ export interface AuthUser {
 
 export interface AppSession extends Session {
   user: AuthUser;
+}
+
+// This is the lighter-weight user you pass to client components
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  image?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  isActive?: boolean;
+  createdAt: string; // ISO strings on client are fine
+  updatedAt: string;
+  role?: {
+    id: RoleId; // ✅ strongly-typed
+    name: string; // Persian label
+  } | null;
 }

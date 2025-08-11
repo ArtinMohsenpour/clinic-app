@@ -3,13 +3,13 @@ import HeroSlider from "@/components/public/home/HeroSlider";
 // app/page.tsx
 export default function Home() {
   return (
-    <div className="font-sans">
+    <div className="my-5">
       {/* Hero Section */}
 
       <HeroSlider />
 
       {/* About Section */}
-      <section className="mt-16">
+      <section className="mt-16 ">
         <h2 className="text-3xl font-bold font-digikala text-navbar-secondary mb-4">
           درباره ما
         </h2>

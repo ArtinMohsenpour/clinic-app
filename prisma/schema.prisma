@@ -8,17 +8,17 @@ datasource db {
 }
 
  model Role {
-   id    String  @id @default(uuid())
-   name  String  @unique
-   users User[]  // one-to-many
-
-   @@map("role")
- }
+  id    String @id @default(uuid())
+  key   String @unique
+  name  String @unique
+  users UserRole[]
+  @@map("role")
+}
 
 model User {
   id            String    @id
   name          String
-  email         String
+  email         String  @unique  
   emailVerified Boolean
   image         String?
   createdAt     DateTime
@@ -27,12 +27,23 @@ model User {
   accounts      Account[]
   phone         String? 
   address       String?
+  roles         UserRole[]
+   isActive            Boolean  @default(true)
+  mustChangePassword  Boolean  @default(false) // force change on next login
 
-  roleId        String? 
-  role          Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull)
-
-  @@unique([email])
   @@map("user")
+}
+
+model UserRole {
+  userId String
+  roleId String
+  assignedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_role")
 }
 
 model Session {
@@ -65,7 +76,7 @@ model Account {
   password              String?
   createdAt             DateTime
   updatedAt             DateTime
-
+ @@unique([providerId, accountId])
   @@map("account")
 }
 

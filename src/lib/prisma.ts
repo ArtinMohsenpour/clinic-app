@@ -6,14 +6,15 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
-export const prisma: PrismaClient =
-  global.prisma ||
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+
+export const prisma =
+  globalForPrisma.prisma ||
   new PrismaClient({
-    log: ["query", "warn", "error"],
+    log: ["error"], // optional logs
   });
 
-if (process.env.NODE_ENV !== "production") global.prisma = prisma;
-export default prisma;
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export const user = prisma.user;
 export const sessions = prisma.session;

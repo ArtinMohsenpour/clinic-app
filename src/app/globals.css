@@ -69,3 +69,19 @@ body {
   font-family:"yekan", "bnazanin", Arial, Helvetica, sans-serif,"nastaliq", "digikala", sans-serif, 'yekan';
   direction: rtl;
 }
+
+.ltr-input {
+  direction: rtl !important;
+  unicode-bidi: plaintext !important;
+  font-family: 'Arial', 'Helvetica', sans-serif !important;
+  font-variant-numeric: lining-nums;
+  font-feature-settings: "lnum";
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;    /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;            /* Chrome/Safari */
+}

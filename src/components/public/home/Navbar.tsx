@@ -7,8 +7,7 @@ import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation"; // ✅ App Router
 import { useEffect, useState } from "react";
 
-export function Navbar() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+export function Navbar({ user }: { user?: { name: string } }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -18,21 +17,10 @@ export function Navbar() {
       : "hover:text-navbar-hover border-b-[1px] border-white";
   };
 
-  useEffect(() => {
-    const checkSession = async () => {
-      const session = await authClient.getSession();
-      if (session.data) {
-        setIsLoggedIn(true);
-      }
-    };
-    checkSession();
-  }, [isLoggedIn]);
-
   const logoutHandle = async () => {
     await authClient.signOut();
-    setIsLoggedIn(false);
+    router.replace("/");
     router.refresh();
-    router.push("/");
   };
 
   return (
@@ -77,7 +65,7 @@ export function Navbar() {
               <div className={isActive("/contact")}>تماس با ما</div>
             </Link>
           </li>
-          {!isLoggedIn && (
+          {!user && (
             <li>
               <Link href="/login">
                 <div className={isActive("/login")}>ورود پرسنل</div>
@@ -86,7 +74,7 @@ export function Navbar() {
           )}
 
           {/* Show logout button if logged in */}
-          {isLoggedIn && (
+          {user && (
             <>
               <li>
                 <Link href="/admin">
@@ -96,7 +84,7 @@ export function Navbar() {
               <li>
                 <button
                   onClick={logoutHandle}
-                  className="border-2 text-white border-navbar-primary rounded-2xl px-2 bg-navbar-active hover:bg-navbar-secondary "
+                  className="border-2 text-white border-navbar-primary rounded-2xl px-2 py-[2px] bg-navbar-active hover:bg-navbar-secondary cursor-pointer transition duration-300"
                 >
                   <div>خروج از سایت</div>
                 </button>
