@@ -27,8 +27,10 @@ export async function PUT(
 
   const body = await req.json();
   const {
-    firstName, // from UI (optional)
-    lastName, // from UI (optional)
+    name,
+    fullname,
+    firstName,
+    lastName,
     email,
     role,
     isActive,
@@ -37,9 +39,11 @@ export async function PUT(
     address,
     mustChangePassword,
   } = body as {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
+    name?: unknown;
+    fullname?: unknown;
+    firstName?: unknown;
+    lastName?: unknown;
+    email?: unknown;
     role?: string;
     isActive?: boolean;
     password?: string;
@@ -49,12 +53,18 @@ export async function PUT(
   };
 
   // combine to "name" only if either part was provided
-  const nameCombined =
-    firstName !== undefined || lastName !== undefined
-      ? `${(firstName ?? "").trim()} ${(lastName ?? "").trim()}`.trim()
-      : undefined;
+  const asString = (v: unknown) => (typeof v === "string" ? v : undefined);
 
-  const newEmail = email?.toLowerCase();
+  const nameNormalized =
+    asString(name)?.trim() ||
+    asString(fullname)?.trim() ||
+    (asString(firstName) || asString(lastName)
+      ? `${asString(firstName)?.trim() ?? ""} ${
+          asString(lastName)?.trim() ?? ""
+        }`.trim()
+      : undefined);
+
+  const newEmail = asString(email)?.toLowerCase();
 
   if (newEmail) {
     const exists = await prisma.user.findFirst({
@@ -73,7 +83,7 @@ export async function PUT(
     const updatedUser = await tx.user.update({
       where: { id: params.id },
       data: {
-        ...(nameCombined !== undefined ? { name: nameCombined } : {}), // <-- map to DB
+        ...(nameNormalized !== undefined ? { name: nameNormalized } : {}), // <-- map to DB
         ...(newEmail !== undefined ? { email: newEmail } : {}),
         ...(typeof isActive === "boolean" ? { isActive } : {}),
         ...(phone !== undefined ? { phone } : {}),

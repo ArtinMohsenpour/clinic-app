@@ -16,15 +16,28 @@
 # next.js
 /.next/
 /out/
+/.turbo
 
-# production
+# production builds
 /build
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
 
-# debug
+# editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# caches
+.eslintcache
+.stylelintcache
+
+# debug & logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -32,6 +45,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -40,5 +54,21 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# --- uploads (user-generated) ---
+# keep the folder, ignore its contents
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# if you ever save outside public in dev:
+# /uploads/*
+
+# --- Prisma ---
+# DO NOT ignore the whole prisma/ folder (we want schema + migrations in git)
+# Ignore local dev databases and generated client caches only
+/prisma/*.db
+/prisma/*.sqlite
+/prisma/*.sqlite-journal
+/node_modules/.prisma/
+
+# If you generate TS types elsewhere, keep this ignore
 /src/generated/prisma
-prisma

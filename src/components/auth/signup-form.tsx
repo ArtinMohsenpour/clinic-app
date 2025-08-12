@@ -4,8 +4,6 @@ import { useState, useEffect, useMemo } from "react";
 // import { authClient } from "@/lib/auth-client";
 import { validateEmail, validateNewPassword } from "@/lib/validators";
 
-import Image from "next/image";
-
 type RoleOption = { id: string; name: string; key?: string };
 
 export default function SignupForm({
@@ -15,8 +13,7 @@ export default function SignupForm({
 }) {
   // ---- form state
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
+    fullname: "",
     email: "",
     password: "",
     phone: "",
@@ -32,9 +29,9 @@ export default function SignupForm({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [touched, setTouched] = useState({
-    firstName: false,
-    lastName: false,
+    fullname: false,
     email: false,
     password: false,
     confirmPassword: false,
@@ -49,15 +46,14 @@ export default function SignupForm({
       ? "رمز عبور و تکرار آن یکسان نیست."
       : null;
   const nameError =
-    !form.firstName.trim() || !form.lastName.trim()
+    !form.fullname.trim() || !form.fullname.trim()
       ? "نام و نام خانوادگی الزامی است."
       : null;
   const rolesError =
     form.roles.length === 0 ? "حداقل یک نقش را انتخاب کنید." : null;
 
   // only show if touched
-  const showNameError =
-    touched.firstName || touched.lastName ? nameError : null;
+  const showNameError = touched.fullname ? nameError : null;
   const showEmailError = touched.email ? emailError : null;
   const showPasswordError = touched.password ? passwordError : null;
   const showConfirmPasswordError = touched.confirmPassword
@@ -82,6 +78,20 @@ export default function SignupForm({
       rolesError,
     ]
   );
+
+  // ---- upload the avatar image
+
+  async function uploadAvatar(userId: string, file: File): Promise<string> {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`/api/admin/users/${userId}/avatar`, {
+      method: "POST",
+      body: fd,
+    });
+    const j = await res.json();
+    if (!res.ok) throw new Error(j?.error || "آپلود تصویر ناموفق بود");
+    return j.url as string; // server already sets prisma.user.image
+  }
 
   // ---- load roles if not passed as prop
   useEffect(() => {
@@ -129,50 +139,40 @@ export default function SignupForm({
 
     setIsLoading(true);
     try {
-      // const email = form.email.trim().toLowerCase();
-      // const name = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
-
-      // Step 1: create credentials (BetterAuth makes Account with providerId="email")
-      // const { error } = await authClient.signUp.email({
-      //   email,
-      //   password: form.password,
-      //   name,
-      //   callbackURL: "/admin",
-      // });
-
-      // if (error) {
-      //   setError(error.message || "ثبت‌نام ناموفق بود.");
-      //   return;
-      // }
-
-      // (Optional) image handling: for now just preview locally.
-      // You can later upload to S3 or your VPS and send back the URL here.
-
-      // Step 2: complete profile + assign roles (server links roles)
+      // 1) Create user
       const res = await fetch("/api/admin/users/create-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName: form.firstName.trim(),
-          lastName: form.lastName.trim(),
+          fullname: form.fullname.trim(), // maps to `name` in route
           email: form.email.trim().toLowerCase(),
           password: form.password,
           phone: form.phone || null,
           address: form.address || null,
-          roles: form.roles, // array of Role.id (UUID)
+          roles: form.roles,
         }),
       });
 
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error || "خطا در ذخیره اطلاعات پروفایل");
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j?.error || "خطا در ذخیره اطلاعات پروفایل");
+
+      const newUserId: string | undefined = j?.id || j?.user?.id;
+      if (!newUserId) throw new Error("شناسه کاربر جدید از سرور دریافت نشد.");
+
+      // 2) Upload avatar (optional)
+      if (form.imageFile) {
+        setUploadingAvatar(true);
+        try {
+          await uploadAvatar(newUserId, form.imageFile);
+        } finally {
+          setUploadingAvatar(false);
+        }
       }
 
       setSuccess("کاربر با موفقیت ایجاد شد.");
-      // optional: reset
+      // Reset
       setForm({
-        firstName: "",
-        lastName: "",
+        fullname: "",
         email: "",
         password: "",
         phone: "",
@@ -182,10 +182,6 @@ export default function SignupForm({
       });
       if (preview) URL.revokeObjectURL(preview);
       setPreview(null);
-
-      // you already have callbackURL, this is a safety
-      // router.replace("/admin");
-      // router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "یک خطای غیرمنتظره رخ داد");
     } finally {
@@ -209,9 +205,9 @@ export default function SignupForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ">
               <Field
                 label="نام و نام خانوادگی"
-                value={form.firstName}
-                onChange={(v) => handleChange("firstName", v)}
-                onBlur={() => setTouched((t) => ({ ...t, firstName: true }))}
+                value={form.fullname}
+                onChange={(v) => handleChange("fullname", v)}
+                onBlur={() => setTouched((t) => ({ ...t, fullname: true }))}
                 required
                 inputProps={{ placeholder: "مثلاً علی" }}
               />
@@ -340,7 +336,11 @@ export default function SignupForm({
               disabled={submitDisabled}
               className="w-fit mx-auto items-center justify-center text-center px-20 py-2 bg-navbar-secondary text-white rounded hover:bg-navbar-hover transition disabled:opacity-60"
             >
-              {isLoading ? "در حال ایجاد..." : "ایجاد کاربر"}
+              {isLoading
+                ? uploadingAvatar
+                  ? "در حال ایجاد و آپلود تصویر..."
+                  : "در حال ایجاد..."
+                : "ایجاد کاربر"}
             </button>
           </div>
         </form>
@@ -435,7 +435,8 @@ function FilePicker({
       >
         <div className="flex items-center gap-3 min-w-0">
           {preview ? (
-            <Image
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={preview}
               alt="Preview"
               className="w-10 h-10 object-cover rounded-lg border"
@@ -469,9 +470,22 @@ function FilePicker({
             انتخاب فایل
             <input
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg,image/webp"
               className="hidden"
-              onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                if (!f) return onPick(null);
+                const ok = ["image/jpeg", "image/png", "image/webp"];
+                if (!ok.includes(f.type)) {
+                  alert("فقط JPG/PNG/WEBP مجاز است.");
+                  return;
+                }
+                if (f.size > 2 * 1024 * 1024) {
+                  alert("حجم فایل نباید بیش از ۲ مگابایت باشد.");
+                  return;
+                }
+                onPick(f);
+              }}
             />
           </label>
         </div>
