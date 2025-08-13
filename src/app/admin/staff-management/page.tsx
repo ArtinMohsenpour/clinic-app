@@ -25,6 +25,7 @@ export default function StaffManagementPage() {
 
   useEffect(() => {
     void fetchAll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export default function StaffManagementPage() {
       void fetchAll();
     }, 300);
     return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, roleFilter]);
 
   async function fetchAll() {

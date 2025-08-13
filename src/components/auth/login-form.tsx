@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
-import { validateEmail, validateLoginPassword } from "@/lib/validators";
+import {
+  validateEmail,
+  validateLoginPassword,
+} from "@/lib/validators/validators";
 import { LoginFormValues } from "@/config/types/auth/types";
 
 export function LoginForm() {

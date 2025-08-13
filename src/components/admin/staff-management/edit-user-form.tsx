@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { User as dbUser } from "@/config/types/auth/types";
-import { validateEmail, validateNewPassword } from "@/lib/validators";
+import {
+  validateEmail,
+  validateNewPassword,
+} from "@/lib/validators/validators";
 
 type User = {
   id: string;

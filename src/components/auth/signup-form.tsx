@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useMemo } from "react";
 // import { authClient } from "@/lib/auth-client";
-import { validateEmail, validateNewPassword } from "@/lib/validators";
+import {
+  validateEmail,
+  validateNewPassword,
+} from "@/lib/validators/validators";
 
 type RoleOption = { id: string; name: string; key?: string };
 
