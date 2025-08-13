@@ -1,3 +1,22 @@
+// =======================
+// schema.prisma
+// =======================
+// # 1) Preview & format
+// npx prisma format
+
+// # 2) Generate the client
+// npx prisma generate
+
+// # 3) Create and apply a migration in dev
+// npx prisma migrate dev --name init_org_profile_docs
+
+// # (Optional) Open Studio to verify
+// npx prisma studio
+
+// # --- For production deploys on the server ---
+// # After building your app, only apply existing migrations:
+// npx prisma migrate deploy
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,36 +26,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
- model Role {
-  id    String @id @default(uuid())
-  key   String @unique
-  name  String @unique
+// --------- RBAC ---------
+
+model Role {
+  id    String     @id @default(uuid())
+  key   String     @unique
+  name  String     @unique
   users UserRole[]
+
   @@map("role")
 }
 
-model User {
-  id            String    @id
-  name          String
-  email         String  @unique  
-  emailVerified Boolean
-  image         String?
-  createdAt     DateTime
-  updatedAt     DateTime
-  sessions      Session[]
-  accounts      Account[]
-  phone         String? 
-  address       String?
-  roles         UserRole[]
-   isActive            Boolean  @default(true)
-  mustChangePassword  Boolean  @default(false) // force change on next login
-
-  @@map("user")
-}
-
 model UserRole {
-  userId String
-  roleId String
+  userId     String
+  roleId     String
   assignedAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -46,10 +49,41 @@ model UserRole {
   @@map("user_role")
 }
 
+// --------- Auth / Identity ---------
+
+model User {
+  id                 String   @id
+  name               String
+  email              String   @unique
+  emailVerified      Boolean
+  image              String?
+  createdAt          DateTime
+  updatedAt          DateTime
+  phone              String?
+  address            String?
+  isActive           Boolean  @default(true)
+  mustChangePassword Boolean  @default(false) // force change on next login
+
+  // Optional internal code you can use with payroll/exports (keep or remove)
+  employeeCode String? @unique
+
+  // Relations
+  sessions          Session[]
+  accounts          Account[]
+  roles             UserRole[]
+  profile           Profile?
+  branches          UserBranch[] // current branch assignments
+  documents         Document[] // HR docs/payslips the user can see
+  uploadedDocuments Document[]   @relation("UploadedDocs") // docs this user (admin/HR) uploaded
+  auditLogs         AuditLog[]
+
+  @@map("user")
+}
+
 model Session {
   id        String   @id
   expiresAt DateTime
-  token     String
+  token     String   @unique
   createdAt DateTime
   updatedAt DateTime
   ipAddress String?
@@ -57,7 +91,6 @@ model Session {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([token])
   @@map("session")
 }
 
@@ -76,7 +109,8 @@ model Account {
   password              String?
   createdAt             DateTime
   updatedAt             DateTime
- @@unique([providerId, accountId])
+
+  @@unique([providerId, accountId])
   @@map("account")
 }
 
@@ -89,4 +123,127 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+}
+
+// --------- Profile (self-service & prefs) ---------
+
+model Profile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  secondaryEmail String?
+  locale         String? // e.g., "fa-IR", "de-DE"
+  timezone       String? // e.g., "Europe/Berlin"
+  notifyByEmail  Boolean @default(true)
+  emergencyName  String?
+  emergencyPhone String?
+
+  // Avatars: store original privately; small public thumbnail is optional
+  avatarKey      String? // private storage key (original)
+  avatarThumbUrl String? // small public CDN URL (optional)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --------- Organization ---------
+
+model Branch {
+  id        String       @id @default(uuid())
+  key       String       @unique // e.g., "cgn-main"
+  name      String // e.g., "Cologne — Main"
+  city      String?
+  address   String?
+  timezone  String? // e.g., "Europe/Berlin" (handy for schedules)
+  isActive  Boolean      @default(true)
+  users     UserBranch[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@map("branch")
+}
+
+model Department {
+  id        String       @id @default(uuid())
+  key       String       @unique // e.g., "radiology"
+  name      String
+  isActive  Boolean      @default(true)
+  users     UserBranch[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@map("department")
+}
+
+// Which branch/department a user belongs to (can have multiple; pick one primary)
+model UserBranch {
+  userId       String
+  branchId     String
+  departmentId String?
+  assignedAt   DateTime @default(now())
+
+  // Mark the main placement for quick lookups
+  isPrimary Boolean @default(false)
+
+  // Lightweight title without another table (optional)
+  positionTitle String?
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch     Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  @@id([userId, branchId])
+  @@index([userId])
+  @@index([branchId])
+  @@index([departmentId])
+  @@map("user_branch")
+}
+
+// --------- HR Documents ---------
+
+enum DocumentType {
+  PAYSLIP
+  CONTRACT
+  POLICY
+  ID_SCAN
+  OTHER
+}
+
+model Document {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        DocumentType
+  title       String
+  periodMonth Int? // 1..12 (used for payslips)
+  periodYear  Int? // e.g., 2025
+  fileKey     String // private storage key/path
+  mimeType    String
+  size        Int
+
+  uploadedById String
+  uploadedBy   User     @relation("UploadedDocs", fields: [uploadedById], references: [id])
+  sha256       String? // dedupe/integrity
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, type, periodYear, periodMonth]) // prevents duplicate monthly payslips
+  @@index([userId, type, periodYear, periodMonth])
+  @@map("document")
+}
+
+// --------- Auditing ---------
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+  action    String // "PROFILE_UPDATE" | "DOC_UPLOAD" | "DOC_DOWNLOAD" | "BRANCH_ASSIGN"
+  targetId  String? // e.g., userId or documentId
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([actorId, action, createdAt])
+  @@map("audit_log")
 }

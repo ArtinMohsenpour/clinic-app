@@ -1,13 +1,18 @@
+// src/app/api/admin/users/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { STAFF_MANAGEMENT_ALLOWED_ROLES } from "@/config/constants/rbac";
 
+type IdParam = { id: string };
+
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  ctx: { params: Promise<IdParam> } // <- Promise type
 ) {
+  const { id } = await ctx.params; // <- await it
+
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session?.user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -52,7 +57,6 @@ export async function PUT(
     mustChangePassword?: boolean;
   };
 
-  // combine to "name" only if either part was provided
   const asString = (v: unknown) => (typeof v === "string" ? v : undefined);
 
   const nameNormalized =
@@ -68,7 +72,7 @@ export async function PUT(
 
   if (newEmail) {
     const exists = await prisma.user.findFirst({
-      where: { email: newEmail, NOT: { id: params.id } },
+      where: { email: newEmail, NOT: { id } }, // <- use awaited id
       select: { id: true },
     });
     if (exists) {
@@ -81,9 +85,9 @@ export async function PUT(
 
   await prisma.$transaction(async (tx) => {
     const updatedUser = await tx.user.update({
-      where: { id: params.id },
+      where: { id },
       data: {
-        ...(nameNormalized !== undefined ? { name: nameNormalized } : {}), // <-- map to DB
+        ...(nameNormalized !== undefined ? { name: nameNormalized } : {}),
         ...(newEmail !== undefined ? { email: newEmail } : {}),
         ...(typeof isActive === "boolean" ? { isActive } : {}),
         ...(phone !== undefined ? { phone } : {}),
@@ -110,12 +114,11 @@ export async function PUT(
         where: { userId: updatedUser.id, providerId: "credential" },
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const updates: Record<string, any> = { updatedAt: new Date() };
-      if (newEmail) updates.accountId = newEmail;
+      const updates: Record<string, unknown> = { updatedAt: new Date() };
+      if (newEmail) updates["accountId"] = newEmail;
       if (password) {
         if (password.length < 8) throw new Error("Password too short");
-        updates.password = await bcrypt.hash(password, 12);
+        updates["password"] = await bcrypt.hash(password, 12);
       }
 
       if (cred) {
@@ -123,11 +126,11 @@ export async function PUT(
       } else {
         await tx.account.create({
           data: {
-            id: crypto.randomUUID(), // <-- must be INSIDE data
+            id: crypto.randomUUID(),
             providerId: "credential",
-            accountId: newEmail ?? updatedUser.email,
+            accountId: (newEmail ?? updatedUser.email)!,
             userId: updatedUser.id,
-            password: updates.password ?? undefined,
+            password: (updates["password"] as string | undefined) ?? undefined,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -141,8 +144,10 @@ export async function PUT(
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  ctx: { params: Promise<IdParam> } // <- Promise type
 ) {
+  const { id } = await ctx.params; // <- await it
+
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session?.user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -161,7 +166,7 @@ export async function GET(
   if (!can) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const user = await prisma.user.findUnique({
-    where: { id: params.id },
+    where: { id },
     select: {
       id: true,
       name: true,
@@ -169,7 +174,7 @@ export async function GET(
       phone: true,
       address: true,
       isActive: true,
-      image: true, // if you have it; safe to keep
+      image: true,
     },
   });
 
