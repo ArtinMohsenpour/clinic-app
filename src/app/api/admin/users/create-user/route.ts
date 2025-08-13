@@ -5,25 +5,38 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "node:crypto";
 
-const BodySchema = z
-  .object({
-    // allow either first+last OR a single name
-    firstName: z.string().trim().optional(),
-    lastName: z.string().trim().optional(),
-    name: z.string().trim().optional(),
+// 1) Accept `fullname` too, then *transform* into a normalized `name`
+const RawBodySchema = z.object({
+  // allow any of these to be sent:
+  fullname: z.string().trim().optional(),
+  firstName: z.string().trim().optional(),
+  lastName: z.string().trim().optional(),
+  name: z.string().trim().optional(),
 
-    email: z.string().email(),
-    password: z.string().min(8),
+  email: z.string().email(),
+  password: z.string().min(8),
 
-    phone: z.string().trim().max(50).nullable().optional(),
-    address: z.string().trim().max(200).nullable().optional(),
-    image: z.string().url().optional(),
-    roles: z.array(z.string()).min(1, "حداقل یک نقش را انتخاب کنید."),
+  phone: z.string().trim().max(50).nullable().optional(),
+  address: z.string().trim().max(200).nullable().optional(),
+  image: z.string().url().optional(),
+  roles: z.array(z.string()).min(1, "حداقل یک نقش را انتخاب کنید."),
 
-    isActive: z.boolean().optional().default(true),
-    mustChangePassword: z.boolean().optional().default(false),
+  isActive: z.boolean().optional().default(true),
+  mustChangePassword: z.boolean().optional().default(false),
+});
+
+// Build a final `name` field from the provided variants
+const BodySchema = RawBodySchema
+  .transform((v) => {
+    const combined =
+      v.name?.trim() ||
+      v.fullname?.trim() ||
+      ((v.firstName && v.lastName)
+        ? `${v.firstName.trim()} ${v.lastName.trim()}`
+        : "");
+    return { ...v, name: combined };
   })
-  .refine((v) => (v.firstName && v.lastName) || v.name, {
+  .refine((v) => !!v.name, {
     message: "نام و نام خانوادگی یا فیلد نام را وارد کنید.",
     path: ["name"],
   });
@@ -41,9 +54,7 @@ export async function POST(req: Request) {
     const body = parsed.data;
 
     const email = body.email.trim().toLowerCase();
-    const name =
-      body.name?.trim() ||
-      `${body.firstName!.trim()} ${body.lastName!.trim()}`.trim();
+    const name = body.name; // ✅ already normalized by the schema
 
     // validate roles exist
     const rolesInDb = await prisma.role.findMany({
@@ -59,7 +70,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // ensure email unique (race-safe: we still handle P2002 below)
+    // ensure email unique
     const exists = await prisma.user.findUnique({
       where: { email },
       select: { id: true },
@@ -91,11 +102,11 @@ export async function POST(req: Request) {
 
       await tx.account.create({
         data: {
-          id: crypto.randomUUID(),
+          id: randomUUID(),
           userId,
-          providerId: "credential", // <-- IMPORTANT
-          accountId: email.toLowerCase(), // <-- IMPORTANT
-          password: hash, // bcrypt hash
+          providerId: "credential",
+          accountId: email, // already lowercased
+          password: hash,
           createdAt: now,
           updatedAt: now,
         },
@@ -132,12 +143,12 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         ok: true,
+        id: created?.id, // ✅ expose id for avatar upload
         user: { ...created, roleList: created?.roles.map((r) => r.role) },
       },
       { status: 201 }
     );
   } catch (err: unknown) {
-    // Prisma unique violation fallback
     if (err && typeof err === "object" && "code" in err) {
       const code = (err as { code?: string }).code;
       if (code === "P2002") {
@@ -147,7 +158,6 @@ export async function POST(req: Request) {
         );
       }
     }
-    // Log more detail in dev to help you debug quickly
     if (process.env.NODE_ENV !== "production") {
       console.error("create-user error:", err);
     }

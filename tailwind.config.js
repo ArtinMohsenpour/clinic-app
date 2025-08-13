@@ -6,6 +6,7 @@ const config = {
   theme: {
     extend: {
       colors: {
+        "background-gray": "#f5f5f7",
         "golden-yellow": "#E3B505",
         "navbar-primary": "#f8f9fa",
         "navbar-secondary": "#343a40",

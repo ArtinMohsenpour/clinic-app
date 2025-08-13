@@ -39,6 +39,20 @@ export function LoginForm() {
     try {
       const email = form.email.trim().toLowerCase();
 
+      // 1) Pre-check by email (NOT session-based)
+      const pre = await fetch("/api/auth/check-active", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const { active } = await pre.json();
+      if (active === false) {
+        setError("حساب کاربری غیرفعال است. لطفاً با مدیریت تماس بگیرید.");
+        setIsLoading(false);
+        return;
+      }
+
+      // 2) Proceed with BetterAuth sign-in
       const { error } = await authClient.signIn.email({
         email,
         password: form.password,

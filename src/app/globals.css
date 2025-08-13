@@ -42,12 +42,15 @@
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-background-gray: var(--background);
   --color-navbar-primary: #135029;
-  --color-navbar-secondary: #00A390;
+  --color-navbar-secondary:  #008071;
   --color-navbar-text: #495057;
   --color-navbar-hover: #135029;
-  --color-navbar-active:#13AF9D;
+  --color-navbar-active: #00A592;
   --color-navbar-underline:#B6EBE5;
+  --color-cms-primary:  #135029;
+  --color-cms-secondary: #008071;
 
 /* Fonts */
     --font-digikala: "digikala", Arial, Helvetica, sans-serif;
