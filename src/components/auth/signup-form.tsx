@@ -39,6 +39,8 @@ export default function SignupForm({
     password: false,
     confirmPassword: false,
     roles: false,
+    address: false,
+    phone: false,
   });
 
   // ---- validation
@@ -48,10 +50,36 @@ export default function SignupForm({
     form.password && confirmPassword && confirmPassword !== form.password
       ? "رمز عبور و تکرار آن یکسان نیست."
       : null;
-  const nameError =
-    !form.fullname.trim() || !form.fullname.trim()
-      ? "نام و نام خانوادگی الزامی است."
-      : null;
+
+  const n = form.fullname.trim();
+  const nameError = !n
+    ? "نام و نام خانوادگی الزامی است."
+    : n.length < 2
+    ? "حداقل ۲ کاراکتر."
+    : n.length > 120
+    ? "حداکثر ۱۲۰ کاراکتر."
+    : null;
+
+  // Address: optional, max 300
+  const a = (form.address ?? "").trim();
+  const addressError = !a
+    ? null
+    : a.length > 200
+    ? "حداکثر 200 کاراکتر."
+    : null;
+
+  // Phone: optional, 5..32
+  const p = (form.phone ?? "").trim();
+  const phoneNumberError = !p
+    ? null
+    : p.length < 5
+    ? "حداقل ۵ رقم."
+    : p.length > 32
+    ? "حداکثر ۳۲ کاراکتر."
+    : null;
+
+  // (use them with your touched flags)
+
   const rolesError =
     form.roles.length === 0 ? "حداقل یک نقش را انتخاب کنید." : null;
 
@@ -63,6 +91,8 @@ export default function SignupForm({
     ? confirmPasswordError
     : null;
   const showRolesError = touched.roles ? rolesError : null;
+  const showAddressError = touched.address ? addressError : null;
+  const showPhoneError = touched.phone ? phoneNumberError : null;
 
   const submitDisabled = useMemo(
     () =>
@@ -71,7 +101,10 @@ export default function SignupForm({
       !!passwordError ||
       !!confirmPasswordError ||
       !!nameError ||
-      !!rolesError,
+      !!rolesError ||
+      !!addressError ||
+      !!phoneNumberError,
+
     [
       isLoading,
       emailError,
@@ -79,6 +112,8 @@ export default function SignupForm({
       confirmPasswordError,
       nameError,
       rolesError,
+      addressError,
+      phoneNumberError,
     ]
   );
 
@@ -136,6 +171,16 @@ export default function SignupForm({
     setSuccess("");
 
     if (submitDisabled) {
+      setTouched((t) => ({
+        ...t,
+        fullname: true,
+        email: true,
+        password: true,
+        confirmPassword: true,
+        roles: true,
+        address: true, // ✅ add
+        phone: true, // ✅ add
+      }));
       setError("لطفاً خطاهای فرم را برطرف کنید.");
       return;
     }
@@ -245,6 +290,7 @@ export default function SignupForm({
                   type: "password",
                   autoComplete: "new-password",
                   placeholder: "حداقل ۸ کاراکتر قوی",
+                  maxLength: 48,
                 }}
               />
               <Field
@@ -260,6 +306,7 @@ export default function SignupForm({
                   type: "password",
                   autoComplete: "new-password",
                   placeholder: "تکرار رمز عبور",
+                  maxLength: 48,
                 }}
               />
             </div>
@@ -271,15 +318,25 @@ export default function SignupForm({
                 label="آدرس (اختیاری)"
                 value={form.address}
                 onChange={(v) => handleChange("address", v)}
-                inputProps={{ placeholder: "کوچه، خیابان، شهر..." }}
+                onBlur={() => setTouched((t) => ({ ...t, address: true }))}
+                inputProps={{
+                  placeholder: "کوچه، خیابان، شهر...",
+                  maxLength: 200,
+                }}
+                error={showAddressError ?? undefined}
               />
               <Field
                 label="تلفن (اختیاری)"
                 value={form.phone}
                 onChange={(v) => handleChange("phone", v)}
+                onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
+                error={showPhoneError ?? undefined}
                 inputProps={{
                   placeholder: "09xxxxxxxxx",
                   inputMode: "tel",
+                  type: "tel", // ✅ so your Field applies LTR styling
+                  minLength: 5, // ✅
+                  maxLength: 32,
                 }}
               />
             </div>
