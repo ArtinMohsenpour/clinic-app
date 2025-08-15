@@ -19,7 +19,9 @@ export default async function SettingsHome() {
             مدیریت شعب و دپارتمان‌هایی که در بخش‌های مختلف سامانه استفاده
             می‌شوند.
           </p>
-          <div className="mt-3 text-sm text-gray-500">شعب • دپارتمان‌ها</div>
+          <div className="mt-3 text-sm text-gray-500">
+            شعب • دپارتمان‌ها • عناوین شغلی
+          </div>
         </Link>
 
         {/* کارت‌های آینده: امنیت، ایمیل، بکاپ و ... */}
