@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const items = [
   { href: "/admin/settings/organization/branches", label: "شعب" },
   { href: "/admin/settings/organization/departments", label: "دپارتمان‌ها" },
+  { href: "/admin/settings/organization/roles", label: "عناوین شغلی" },
 ];
 
 export default function Tabs() {

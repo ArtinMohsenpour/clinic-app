@@ -8,19 +8,37 @@ export async function GET(req: Request) {
   if (!session?.user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // RBAC: must have one of allowed roles
+  // RBAC
   const can = await prisma.user.findFirst({
     where: {
       id: session.user.id,
-      roles: { some: { role: { key: { in: Array.from(STAFF_MANAGEMENT_ALLOWED_ROLES) } } } },
+      roles: {
+        some: {
+          role: { key: { in: Array.from(STAFF_MANAGEMENT_ALLOWED_ROLES) } },
+        },
+      },
     },
     select: { id: true },
   });
   if (!can) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const roles = await prisma.role.findMany({
-    select: { id: true, key: true, name: true },
+  // Include assignment counts and normalize to the UI shape
+  const rows = await prisma.role.findMany({
     orderBy: { name: "asc" },
+    select: {
+      id: true,
+      key: true,
+      name: true,
+      _count: { select: { users: true } }, // users is the UserRole[] relation on Role
+    },
   });
-  return NextResponse.json(roles);
+
+  return NextResponse.json(
+    rows.map((r) => ({
+      id: r.id,
+      key: r.key,
+      name: r.name,
+      usersCount: r._count.users,
+    }))
+  );
 }
