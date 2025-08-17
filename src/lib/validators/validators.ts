@@ -5,6 +5,8 @@ export function validateEmail(email: string): ValidationResult {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!email) return { isValid: false, error: "ایمیل الزامی است." };
   if (!regex.test(email)) return { isValid: false, error: "ایمیل معتبر نیست." };
+  if (email.trim().length > 64)
+    return { isValid: false, error: "حداکثر ۶۴ کاراکتر." };
   return { isValid: true, error: null };
 }
 
