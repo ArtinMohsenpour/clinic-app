@@ -91,3 +91,12 @@ export interface User {
     name: string; // Persian label
   } | null;
 }
+
+export interface ProfileState {
+  secondaryEmail: string;
+  locale: string;
+  timezone: string;
+  notifyByEmail: boolean;
+  emergencyName: string;
+  emergencyPhone: string;
+};

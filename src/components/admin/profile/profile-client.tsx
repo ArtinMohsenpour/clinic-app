@@ -127,6 +127,7 @@ export default function ProfileClient() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ---------- Helpers ---------- */
@@ -364,16 +365,13 @@ export default function ProfileClient() {
             </>
           )}
         </div>
-
-        <div className="mt-2 text-sm text-gray-500 select-text ltr-input">
-          {me.email || "بدون ایمیل"}
-        </div>
       </div>
 
       {/* Read-only identity and placements */}
       <div className="rounded-2xl bg-white p-6 m-1 mb-6 shadow-sm shadow-emerald-800 border-r-7 border-r-navbar-secondary">
         <div className="text-lg font-semibold text-cms-primary mb-4">
-          اطلاعات کاربر
+          اطلاعات کاربر{" "}
+          <span className="text-sm font-light">(غیرقابل ادیت)</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
           <div className="grid grid-cols-2 gap-4">
@@ -402,19 +400,39 @@ export default function ProfileClient() {
               <div className="text-sm text-gray-700 mb-1 pr-1">شهر محل کار</div>
               <div className="flex flex-col gap-1 pr-2">
                 {me.branches?.length ? (
-                  me.branches.map((p, i) => (
-                    <div key={i} className="text-sm text-gray-700">
-                      <span className="font-medium">{p.branch.name}</span>
-                      {p.department ? ` — ${p.department.name}` : ""}
-                      {p.isPrimary ? (
-                        <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-700 border border-indigo-200">
-                          اصلی
-                        </span>
-                      ) : null}
-                    </div>
-                  ))
+                  <ul className="space-y-1">
+                    {me.branches.map((p, i) => (
+                      <li
+                        key={`${p.branch?.id ?? "branch"}-${
+                          p.department?.id ?? "dept"
+                        }-${i}`}
+                        className="flex w-fit space-x-3 items-center justify-start rounded-lg bg-gray-50/60 px-2 py-1"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm text-gray-900">
+                            <span className="font-semibold">
+                              {p.branch?.name}
+                            </span>
+
+                            {p.department ? (
+                              <span className="text-gray-600">
+                                {" "}
+                                · {p.department.name}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        {p.isPrimary ? (
+                          <span className="shrink-0 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">
+                            اصلی
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
                 ) : (
-                  <span className="text-gray-500 text-sm">ثبت نشده</span>
+                  <span className="text-sm text-gray-500">ثبت نشده</span>
                 )}
               </div>
             </div>
