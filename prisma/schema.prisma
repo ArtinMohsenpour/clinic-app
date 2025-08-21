@@ -55,7 +55,7 @@ model User {
   id                 String   @id
   name               String
   email              String   @unique
-  emailVerified      Boolean
+  emailVerified      Boolean  @default(false)
   image              String?
   createdAt          DateTime
   updatedAt          DateTime
@@ -76,6 +76,11 @@ model User {
   documents         Document[] // HR docs/payslips the user can see
   uploadedDocuments Document[]   @relation("UploadedDocs") // docs this user (admin/HR) uploaded
   auditLogs         AuditLog[]
+
+  // --- NEW: CMS back relations ---
+  uploadedAssets   MediaAsset[] @relation("UserUploadedAssets")
+  articlesAuthored Article[]    @relation("ArticleAuthor")
+  articlesUpdated  Article[]    @relation("ArticleUpdatedBy")
 
   @@map("user")
 }
@@ -246,4 +251,133 @@ model AuditLog {
 
   @@index([actorId, action, createdAt])
   @@map("audit_log")
+}
+
+// ---------- Content primitives ----------
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
+}
+
+model MediaAsset {
+  id        String  @id @default(uuid())
+  fileKey   String  @unique
+  publicUrl String?
+  alt       String?
+  mimeType  String
+  size      Int
+  width     Int?
+  height    Int?
+
+  uploadedById String?
+  uploadedBy   User?   @relation("UserUploadedAssets", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  // NEW: back-relation for Article.cover
+  coverOfArticles Article[] @relation("ArticleCover")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // where this asset is used
+  articleMedias ArticleMedia[]
+
+  @@index([uploadedById])
+  @@map("media_asset")
+}
+
+model Tag {
+  id   String @id @default(uuid())
+  key  String @unique
+  name String @unique
+
+  // m2m
+  articleTags ArticleTag[]
+
+  @@map("tag")
+}
+
+model Category {
+  id   String @id @default(uuid())
+  key  String @unique
+  name String @unique
+
+  // m2m
+  articleCategories ArticleCategory[]
+
+  @@map("category")
+}
+
+// ---------- Articles ----------
+model Article {
+  id          String        @id @default(uuid())
+  slug        String        @unique
+  title       String
+  excerpt     String?
+  body        Json
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+  readingMin  Int?
+
+  // Pair with MediaAsset.coverOfArticles
+  coverId String?
+  cover   MediaAsset? @relation("ArticleCover", fields: [coverId], references: [id], onDelete: SetNull)
+
+  // Pair with User.articlesAuthored
+  authorId String
+  author   User   @relation("ArticleAuthor", fields: [authorId], references: [id])
+
+  // Pair with User.articlesUpdated
+  updatedById String?
+  updatedBy   User?   @relation("ArticleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  // SEO
+  seoTitle       String?
+  seoDescription String?
+
+  // taxonomy
+  tags       ArticleTag[]
+  categories ArticleCategory[]
+
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  media     ArticleMedia[] // gallery
+
+  @@index([status, publishedAt])
+  @@index([createdAt])
+  @@map("article")
+}
+
+model ArticleTag {
+  articleId String
+  tagId     String
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, tagId])
+  @@map("article_tag")
+}
+
+model ArticleCategory {
+  articleId  String
+  categoryId String
+  article    Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, categoryId])
+  @@map("article_category")
+}
+
+model ArticleMedia {
+  articleId String
+  mediaId   String
+  order     Int    @default(0) // for manual sorting
+
+  article Article    @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  media   MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, mediaId])
+  @@index([articleId, order])
+  @@map("article_media")
 }
