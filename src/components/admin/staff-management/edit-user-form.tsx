@@ -244,7 +244,7 @@ export default function EditUserForm({ userId }: { userId: string }) {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/roles", { cache: "no-store" });
+        const res = await fetch("/api/admin/roles", { cache: "no-store" });
         if (!res.ok) throw new Error("failed to load roles");
         const rows: RoleOption[] = await res.json();
         setAllRoles(rows);

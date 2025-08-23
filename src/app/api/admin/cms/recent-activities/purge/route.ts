@@ -1,35 +1,38 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { STAFF_MANAGEMENT_ALLOWED_ROLES } from "@/config/constants/rbac";
 import type { Prisma } from "@prisma/client";
+import { ACTIVITY_ALLOWED_ROLES } from "@/config/constants/rbac";
 
-async function requireCMS(req: Request) {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+async function requireAudit(req: Request) {
   const session = await auth.api.getSession({ headers: req.headers });
-  if (!session?.user)
+  if (!session?.user) {
     return {
       error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
     };
+  }
   const can = await prisma.user.findFirst({
     where: {
       id: session.user.id,
       roles: {
-        some: {
-          role: { key: { in: Array.from(STAFF_MANAGEMENT_ALLOWED_ROLES) } },
-        },
+        some: { role: { key: { in: Array.from(ACTIVITY_ALLOWED_ROLES) } } },
       },
     },
     select: { id: true },
   });
-  if (!can)
+  if (!can) {
     return {
       error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
     };
+  }
   return { session };
 }
 
 export async function POST(req: Request) {
-  const gate = await requireCMS(req);
+  const gate = await requireAudit(req);
   if ("error" in gate) return gate.error;
 
   const body = await req.json().catch(() => ({}));

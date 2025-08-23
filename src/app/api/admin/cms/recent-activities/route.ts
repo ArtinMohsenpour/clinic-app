@@ -1,36 +1,50 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { STAFF_MANAGEMENT_ALLOWED_ROLES } from "@/config/constants/rbac";
 import { Prisma } from "@prisma/client";
 
-async function gate(req: Request) {
+import { ACTIVITY_ALLOWED_ROLES  } from "@/config/constants/rbac";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+async function requireAudit(req: Request) {
   const session = await auth.api.getSession({ headers: req.headers });
-  if (!session?.user)
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  if (!session?.user) {
+    return {
+      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
   const can = await prisma.user.findFirst({
     where: {
       id: session.user.id,
-      roles: { some: { role: { key: { in: Array.from(STAFF_MANAGEMENT_ALLOWED_ROLES) } } } },
+      roles: {
+        some: { role: { key: { in: Array.from(ACTIVITY_ALLOWED_ROLES ) } } },
+      },
     },
     select: { id: true },
   });
-  if (!can)
-    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  if (!can) {
+    return {
+      error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+    };
+  }
   return { session };
 }
 
 export async function GET(req: Request) {
-  const g = await gate(req);
-  if ("error" in g) return g.error;
+  const gate = await requireAudit(req);
+  if ("error" in gate) return gate.error;
 
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get("q") ?? "").trim();
   const action = (searchParams.get("action") ?? "").trim();
   const from = (searchParams.get("from") ?? "").trim(); // yyyy-mm-dd
-  const to = (searchParams.get("to") ?? "").trim();     // yyyy-mm-dd
+  const to = (searchParams.get("to") ?? "").trim(); // yyyy-mm-dd
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
-  const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") ?? "20", 10)));
+  const pageSize = Math.min(
+    100,
+    Math.max(1, parseInt(searchParams.get("pageSize") ?? "20", 10))
+  );
   const skip = (page - 1) * pageSize;
 
   // ✅ Use Prisma.AuditLogWhereInput
@@ -40,10 +54,10 @@ export async function GET(req: Request) {
 
   if (q) {
     where.OR = [
-      { action:   { contains: q, mode: "insensitive" } },
+      { action: { contains: q, mode: "insensitive" } },
       { targetId: { contains: q, mode: "insensitive" } },
       // relation filter must be wrapped in `is: { ... }`
-      { actor: { is: { name:  { contains: q, mode: "insensitive" } } } },
+      { actor: { is: { name: { contains: q, mode: "insensitive" } } } },
       { actor: { is: { email: { contains: q, mode: "insensitive" } } } },
     ];
   }

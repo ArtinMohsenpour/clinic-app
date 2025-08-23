@@ -40,7 +40,10 @@ type ModuleKey =
 
 type StatCounts = { drafts?: number; published?: number; total?: number };
 
-type StatsResponse = Partial<Record<ModuleKey, StatCounts>> & {
+// Split module counts from extras so the index signature is preserved
+type ModuleCounts = Partial<Record<ModuleKey, StatCounts>>;
+
+type CmsStatsResponse = ModuleCounts & {
   reviewQueue?: Array<{
     id: string;
     title: string;
@@ -48,6 +51,7 @@ type StatsResponse = Partial<Record<ModuleKey, StatCounts>> & {
     updatedAt: string;
   }>;
   recentActivity?: Array<{ id: string; action: string; createdAt: string }>;
+  canViewActivity?: boolean;
 };
 
 const MODULES: Array<{
@@ -203,10 +207,11 @@ export default function CmsHomePage() {
   // UI state
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<StatsResponse | null>(null);
+  const [stats, setStats] = useState<CmsStatsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // If you expose user roles on client, put keys here to gate modules (optional)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const userRoleKeys: string[] = [];
 
   const groupsFa: Record<(typeof MODULES)[number]["group"], string> = {
@@ -215,29 +220,29 @@ export default function CmsHomePage() {
     Site: "سایت",
     Operations: "عملیات",
   };
-  const groups = ["Content", "Clinic Data", "Site", "Operations"] as const;
 
   useEffect(() => {
-    let alive = true;
+    let cancelled = false;
     (async () => {
       try {
         setLoading(true);
         setError(null);
         const res = await fetch("/api/admin/cms/stats", { cache: "no-store" });
         if (!res.ok) {
-          const j = await res.json().catch(() => ({}));
+          const j = (await res.json().catch(() => ({}))) as { error?: string };
           throw new Error(j?.error || "Failed to load stats");
         }
-        const j: StatsResponse = await res.json();
-        if (alive) setStats(j);
+        const j = (await res.json()) as CmsStatsResponse;
+        if (!cancelled) setStats(j);
       } catch {
-        if (alive) setError("خطا در بارگذاری آمار CMS");
+        if (!cancelled) setError("خطا در بارگذاری آمار CMS");
       } finally {
-        if (alive) setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+    
     return () => {
-      alive = false;
+      cancelled = true;
     };
   }, []);
 
@@ -257,6 +262,8 @@ export default function CmsHomePage() {
       ),
     [q, userRoleKeys]
   );
+
+  const moduleCounts = useMemo(() => (stats ?? {}) as ModuleCounts, [stats]);
 
   return (
     <div
@@ -329,7 +336,7 @@ export default function CmsHomePage() {
                       Icon={m.icon}
                       manageHref={m.hrefManage}
                       newHref={m.hrefNew}
-                      counts={stats?.[m.key]}
+                      counts={moduleCounts[m.key]}
                     />
                   ))}
             </div>
@@ -340,7 +347,12 @@ export default function CmsHomePage() {
       {/* Review + Activity – mirrors the profile "Documents" box vibe */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ReviewQueue items={stats?.reviewQueue ?? []} loading={loading} />
-        <RecentActivity items={stats?.recentActivity ?? []} loading={loading} />
+        {stats?.canViewActivity ? (
+          <RecentActivity
+            items={stats?.recentActivity ?? []}
+            loading={loading}
+          />
+        ) : null}
       </div>
     </div>
   );
@@ -359,7 +371,7 @@ function ModuleCard({
   title: string;
   description: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  Icon: any;
+  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   manageHref: string;
   newHref?: string;
   counts?: StatCounts;
@@ -369,7 +381,7 @@ function ModuleCard({
   return (
     <Link
       href={manageHref}
-      className="group relative block rounded-2xl border border-gray-200 bg-white p-5 shadow-md transition hover:shadow-md hover:border-cms-primary hover:shadow-cms-secondary focus:outline-none focus:ring-2 focus:ring-navbar-secondary"
+      className="group relative block rounded-2xl border border-gray-300 bg-gradient-to-r from-gray-50 via-white to-gray-50 p-5 shadow-md transition hover:shadow-md hover:border-cms-primary hover:shadow-cms-secondary focus:outline-none focus:ring-2 focus:ring-navbar-secondary"
     >
       {/* Total badge */}
       {typeof total === "number" ? (

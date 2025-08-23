@@ -1,10 +1,14 @@
+// src/app/api/admin/cms/education/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { Prisma } from "@prisma/client"; // ⬅️ use Prisma types
+import type { Prisma } from "@prisma/client";
+import { PublishStatus } from "@prisma/client";
 import { requireCmsAccess } from "../_auth";
 
-// ——— Schemas ———
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const BodyMarkdown = z.object({
   type: z.literal("markdown"),
   content: z.string(),
@@ -19,7 +23,7 @@ const CreateSchema = z
       .max(200)
       .regex(/^[a-z0-9-]+$/),
     excerpt: z.string().max(300).nullable().optional(),
-    body: BodyMarkdown, // editor sends {type:"markdown", content:string}
+    body: BodyMarkdown,
     status: z
       .enum(["DRAFT", "PUBLISHED", "SCHEDULED", "ARCHIVED"])
       .default("DRAFT"),
@@ -60,11 +64,6 @@ export async function GET(req: Request) {
   if ("error" in gate) return gate.error;
 
   const { searchParams } = new URL(req.url);
-  const q = (searchParams.get("q") ?? "").trim();
-  const status = (searchParams.get("status") ?? "").trim().toUpperCase();
-  const tagId = (searchParams.get("tagId") ?? "").trim();
-  const categoryId = (searchParams.get("categoryId") ?? "").trim();
-
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const pageSize = Math.min(
     50,
@@ -72,24 +71,30 @@ export async function GET(req: Request) {
   );
   const skip = (page - 1) * pageSize;
 
-  const where: Prisma.ArticleWhereInput = {};
-  if (q)
+  const q = (searchParams.get("q") ?? "").trim();
+  const statusRaw = (searchParams.get("status") ?? "").trim().toUpperCase();
+  const tagId = (searchParams.get("tagId") ?? "").trim();
+  const categoryId = (searchParams.get("categoryId") ?? "").trim();
+
+  const where: Prisma.EducationWhereInput = {};
+
+  // Safe enum check using generated enum
+  if ((Object.values(PublishStatus) as string[]).includes(statusRaw)) {
+    where.status = statusRaw as PublishStatus;
+  }
+
+  if (q) {
     where.OR = [
       { title: { contains: q, mode: "insensitive" } },
       { slug: { contains: q, mode: "insensitive" } },
     ];
-  if (
-    status &&
-    ["DRAFT", "PUBLISHED", "SCHEDULED", "ARCHIVED"].includes(status)
-  )
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    where.status = status as any;
+  }
   if (tagId) where.tags = { some: { tagId } };
   if (categoryId) where.categories = { some: { categoryId } };
 
   const [total, items] = await Promise.all([
-    prisma.article.count({ where }),
-    prisma.article.findMany({
+    prisma.education.count({ where }),
+    prisma.education.findMany({
       where,
       orderBy: [{ createdAt: "desc" }],
       skip,
@@ -102,7 +107,6 @@ export async function GET(req: Request) {
         publishedAt: true,
         createdAt: true,
         updatedAt: true,
-        readingMin: true,
         author: { select: { id: true, name: true } },
         cover: { select: { id: true, publicUrl: true, alt: true } },
         _count: { select: { tags: true, categories: true, media: true } },
@@ -110,12 +114,7 @@ export async function GET(req: Request) {
     }),
   ]);
 
-  return NextResponse.json({
-    page,
-    pageSize,
-    total,
-    items,
-  });
+  return NextResponse.json({ page, pageSize, total, items });
 }
 
 export async function POST(req: Request) {
@@ -134,22 +133,20 @@ export async function POST(req: Request) {
   const body = parsed.data;
 
   // unique slug
-  const exists = await prisma.article.findUnique({
+  const exists = await prisma.education.findUnique({
     where: { slug: body.slug },
     select: { id: true },
   });
   if (exists)
     return NextResponse.json({ error: "duplicate_slug" }, { status: 409 });
 
-  // Derive publishedAt
+  // derive publishedAt
   let publishedAt: Date | null | undefined = null;
-  if (body.status === "PUBLISHED" && !body.publishedAt) {
+  if (body.status === "PUBLISHED" && !body.publishedAt)
     publishedAt = new Date();
-  } else if (body.publishedAt) {
-    publishedAt = new Date(body.publishedAt);
-  }
+  else if (body.publishedAt) publishedAt = new Date(body.publishedAt);
 
-  const created = await prisma.article.create({
+  const created = await prisma.education.create({
     data: {
       title: body.title,
       slug: body.slug,
@@ -158,7 +155,6 @@ export async function POST(req: Request) {
       body: body.body as any,
       status: body.status,
       publishedAt,
-      readingMin: null,
       coverId: body.coverId ?? null,
       authorId: session.user.id,
       updatedById: session.user.id,
@@ -182,12 +178,13 @@ export async function POST(req: Request) {
     select: { id: true },
   });
 
+  // audit
   await prisma.auditLog.create({
     data: {
       actorId: session.user.id,
-      action: "CMS_ARTICLE_CREATE",
+      action: "CMS_EDU_CREATE",
       targetId: created.id,
-      meta: { title: body.title, slug: body.slug, status: body.status },
+      meta: { slug: body.slug, status: body.status },
     },
   });
 

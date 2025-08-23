@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { STAFF_MANAGEMENT_ALLOWED_ROLES } from "@/config/constants/rbac";
 
 export async function GET(req: Request) {
   const session = await auth.api.getSession({ headers: req.headers });

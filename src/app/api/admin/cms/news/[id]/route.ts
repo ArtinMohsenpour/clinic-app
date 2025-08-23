@@ -1,10 +1,13 @@
+// app/api/admin/cms/news/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { requireCmsAccess } from "../../_auth";
 
-type IdParam = { id: string };
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
+type IdParam = { id: string };
 
 
 const BodyMarkdown = z.object({
@@ -58,12 +61,12 @@ const PatchSchema = z
   });
 
 export async function GET(_req: Request, ctx: { params: Promise<IdParam> }) {
-    const gate = await requireCmsAccess(_req);
+   const gate = await requireCmsAccess(_req);
   if ("error" in gate) return gate.error;
 
   const { id } = await ctx.params;
 
-  const row = await prisma.article.findUnique({
+  const row = await prisma.news.findUnique({
     where: { id },
     include: {
       author: { select: { id: true, name: true, email: true } },
@@ -85,8 +88,8 @@ export async function GET(_req: Request, ctx: { params: Promise<IdParam> }) {
       },
     },
   });
-  if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(row);
 }
 
@@ -106,9 +109,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
   }
   const body = parsed.data;
 
-  // slug uniqueness (exclude self)
+  // unique slug (excluding this row)
   if (body.slug) {
-    const exists = await prisma.article.findFirst({
+    const exists = await prisma.news.findFirst({
       where: { slug: body.slug, NOT: { id } },
       select: { id: true },
     });
@@ -116,12 +119,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
       return NextResponse.json({ error: "duplicate_slug" }, { status: 409 });
   }
 
-  // Derive publishedAt updates
+  // derive publishedAt updates
   let publishedAtUpdate: Date | null | undefined = undefined;
   if (body.status === "PUBLISHED" && body.publishedAt === undefined) {
-    // if moving to PUBLISHED and publishedAt not explicitly sent,
-    // set it if currently null
-    const current = await prisma.article.findUnique({
+    const current = await prisma.news.findUnique({
       where: { id },
       select: { publishedAt: true },
     });
@@ -134,8 +135,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
   }
 
   await prisma.$transaction(async (tx) => {
-    // main update
-    await tx.article.update({
+    await tx.news.update({
       where: { id },
       data: {
         title: body.title,
@@ -150,24 +150,22 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
       },
     });
 
-    // replace tags if provided
     if (body.tagIds) {
-      await tx.articleTag.deleteMany({ where: { articleId: id } });
+      await tx.newsTag.deleteMany({ where: { newsId: id } });
       if (body.tagIds.length) {
-        await tx.articleTag.createMany({
-          data: body.tagIds.map((tagId) => ({ articleId: id, tagId })),
+        await tx.newsTag.createMany({
+          data: body.tagIds.map((tagId) => ({ newsId: id, tagId })),
           skipDuplicates: true,
         });
       }
     }
 
-    // replace categories if provided
     if (body.categoryIds) {
-      await tx.articleCategory.deleteMany({ where: { articleId: id } });
+      await tx.newsCategory.deleteMany({ where: { newsId: id } });
       if (body.categoryIds.length) {
-        await tx.articleCategory.createMany({
+        await tx.newsCategory.createMany({
           data: body.categoryIds.map((categoryId) => ({
-            articleId: id,
+            newsId: id,
             categoryId,
           })),
           skipDuplicates: true,
@@ -175,13 +173,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
       }
     }
 
-    // replace gallery if provided
     if (body.gallery) {
-      await tx.articleMedia.deleteMany({ where: { articleId: id } });
+      await tx.newsMedia.deleteMany({ where: { newsId: id } });
       if (body.gallery.length) {
-        await tx.articleMedia.createMany({
+        await tx.newsMedia.createMany({
           data: body.gallery.map((g) => ({
-            articleId: id,
+            newsId: id,
             mediaId: g.mediaId,
             order: g.order ?? 0,
           })),
@@ -191,47 +188,39 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
     }
   });
 
-  try {
-    await prisma.auditLog.create({
-      data: {
-        actorId: session.user.id,
-        action: "CMS_ARTICLE_UPDATE",
-        targetId: id,
-        meta: {
-          title: body.title,
-          slug: body.slug,
-          status: body.status,
-          coverId: body.coverId,
-        },
-      },
-    });
-  } catch {
-    // optional: swallow logging errors
-  }
+  // AUDIT: update
+  await prisma.auditLog.create({
+    data: {
+      actorId: session.user.id,
+      action: "CMS_NEWS_UPDATE",
+      targetId: id,
+      meta: { changed: Object.keys(body) }, // simple “what changed” hint
+    },
+  });
 
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
-   const gate = await requireCmsAccess(req);
-   if ("error" in gate) return gate.error;
+  const gate = await requireCmsAccess(req);
+  if ("error" in gate) return gate.error;
   const { session } = gate;
   const { id } = await ctx.params;
 
   try {
-    await prisma.article.delete({ where: { id } });
-    try {
-      await prisma.auditLog.create({
-        data: {
-          actorId: session.user.id,
-          action: "CMS_ARTICLE_DELETE",
-          targetId: id,
-          meta: {},
-        },
-      });
-    } catch {}
-    return NextResponse.json({ ok: true });
+    await prisma.news.delete({ where: { id } });
   } catch {
-    return NextResponse.json({ error: "delete_failed" }, { status: 400 });
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  // AUDIT: delete
+  await prisma.auditLog.create({
+    data: {
+      actorId: session.user.id,
+      action: "CMS_NEWS_DELETE",
+      targetId: id,
+    },
+  });
+
+  return NextResponse.json({ ok: true });
 }

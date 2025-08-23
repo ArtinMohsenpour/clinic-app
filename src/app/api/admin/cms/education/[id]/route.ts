@@ -1,11 +1,13 @@
+// src/app/api/admin/cms/education/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { requireCmsAccess } from "../../_auth";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type IdParam = { id: string };
-
-
 
 const BodyMarkdown = z.object({
   type: z.literal("markdown"),
@@ -58,12 +60,11 @@ const PatchSchema = z
   });
 
 export async function GET(_req: Request, ctx: { params: Promise<IdParam> }) {
-    const gate = await requireCmsAccess(_req);
+  const gate = await requireCmsAccess(_req);
   if ("error" in gate) return gate.error;
 
   const { id } = await ctx.params;
-
-  const row = await prisma.article.findUnique({
+  const row = await prisma.education.findUnique({
     where: { id },
     include: {
       author: { select: { id: true, name: true, email: true } },
@@ -86,12 +87,11 @@ export async function GET(_req: Request, ctx: { params: Promise<IdParam> }) {
     },
   });
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
   return NextResponse.json(row);
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
-   const gate = await requireCmsAccess(req);
+  const gate = await requireCmsAccess(req);
   if ("error" in gate) return gate.error;
   const { session } = gate;
   const { id } = await ctx.params;
@@ -106,22 +106,19 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
   }
   const body = parsed.data;
 
-  // slug uniqueness (exclude self)
   if (body.slug) {
-    const exists = await prisma.article.findFirst({
+    const exists = await prisma.education.findFirst({
       where: { slug: body.slug, NOT: { id } },
       select: { id: true },
     });
-    if (exists)
+    if (exists) {
       return NextResponse.json({ error: "duplicate_slug" }, { status: 409 });
+    }
   }
 
-  // Derive publishedAt updates
   let publishedAtUpdate: Date | null | undefined = undefined;
   if (body.status === "PUBLISHED" && body.publishedAt === undefined) {
-    // if moving to PUBLISHED and publishedAt not explicitly sent,
-    // set it if currently null
-    const current = await prisma.article.findUnique({
+    const current = await prisma.education.findUnique({
       where: { id },
       select: { publishedAt: true },
     });
@@ -133,9 +130,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
     publishedAtUpdate = body.publishedAt ? new Date(body.publishedAt) : null;
   }
 
+  // single transaction (no duplication)
   await prisma.$transaction(async (tx) => {
-    // main update
-    await tx.article.update({
+    await tx.education.update({
       where: { id },
       data: {
         title: body.title,
@@ -150,24 +147,22 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
       },
     });
 
-    // replace tags if provided
     if (body.tagIds) {
-      await tx.articleTag.deleteMany({ where: { articleId: id } });
+      await tx.educationTag.deleteMany({ where: { educationId: id } });
       if (body.tagIds.length) {
-        await tx.articleTag.createMany({
-          data: body.tagIds.map((tagId) => ({ articleId: id, tagId })),
+        await tx.educationTag.createMany({
+          data: body.tagIds.map((tagId) => ({ educationId: id, tagId })),
           skipDuplicates: true,
         });
       }
     }
 
-    // replace categories if provided
     if (body.categoryIds) {
-      await tx.articleCategory.deleteMany({ where: { articleId: id } });
+      await tx.educationCategory.deleteMany({ where: { educationId: id } });
       if (body.categoryIds.length) {
-        await tx.articleCategory.createMany({
+        await tx.educationCategory.createMany({
           data: body.categoryIds.map((categoryId) => ({
-            articleId: id,
+            educationId: id,
             categoryId,
           })),
           skipDuplicates: true,
@@ -175,13 +170,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
       }
     }
 
-    // replace gallery if provided
     if (body.gallery) {
-      await tx.articleMedia.deleteMany({ where: { articleId: id } });
+      await tx.educationMedia.deleteMany({ where: { educationId: id } });
       if (body.gallery.length) {
-        await tx.articleMedia.createMany({
+        await tx.educationMedia.createMany({
           data: body.gallery.map((g) => ({
-            articleId: id,
+            educationId: id,
             mediaId: g.mediaId,
             order: g.order ?? 0,
           })),
@@ -191,47 +185,28 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
     }
   });
 
-  try {
-    await prisma.auditLog.create({
-      data: {
-        actorId: session.user.id,
-        action: "CMS_ARTICLE_UPDATE",
-        targetId: id,
-        meta: {
-          title: body.title,
-          slug: body.slug,
-          status: body.status,
-          coverId: body.coverId,
-        },
-      },
-    });
-  } catch {
-    // optional: swallow logging errors
-  }
+  await prisma.auditLog.create({
+    data: {
+      actorId: session.user.id,
+      action: "CMS_EDU_UPDATE",
+      targetId: id,
+      meta: { slug: body.slug, status: body.status },
+    },
+  });
 
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
-   const gate = await requireCmsAccess(req);
-   if ("error" in gate) return gate.error;
+  const gate = await requireCmsAccess(req);
+  if ("error" in gate) return gate.error;
   const { session } = gate;
   const { id } = await ctx.params;
 
-  try {
-    await prisma.article.delete({ where: { id } });
-    try {
-      await prisma.auditLog.create({
-        data: {
-          actorId: session.user.id,
-          action: "CMS_ARTICLE_DELETE",
-          targetId: id,
-          meta: {},
-        },
-      });
-    } catch {}
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "delete_failed" }, { status: 400 });
-  }
+  await prisma.education.delete({ where: { id } });
+  await prisma.auditLog.create({
+    data: { actorId: session.user.id, action: "CMS_EDU_DELETE", targetId: id },
+  });
+
+  return NextResponse.json({ ok: true });
 }

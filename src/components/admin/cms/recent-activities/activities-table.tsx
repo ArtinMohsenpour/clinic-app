@@ -23,6 +23,9 @@ const ACTIONS = [
   "CMS_ARTICLE_CREATE",
   "CMS_ARTICLE_UPDATE",
   "CMS_ARTICLE_DELETE",
+  "CMS_NEWS_CREATE",
+  "CMS_NEWS_UPDATE",
+  "CMS_NEWS_DELETE",
 ] as const;
 
 export default function ActivityTable() {
@@ -129,7 +132,7 @@ export default function ActivityTable() {
         همه فعالیت‌ها
       </h1>
 
-      <div className="rounded-2xl bg-white p-4 md:p-6 shadow-sm border-r-7 border-r-navbar-secondary">
+      <div className="rounded-2xl bg-white p-4 md:p-6 shadow-sm border-r-7 border-[1px] border-gray-200 border-r-navbar-secondary">
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <input
@@ -405,15 +408,19 @@ async function copy(text: string) {
 function badgeFor(action: string) {
   switch (action) {
     case "CMS_ARTICLE_CREATE":
+    case "CMS_NEWS_CREATE":
       return "bg-emerald-50 text-emerald-700 border-emerald-200";
     case "CMS_ARTICLE_UPDATE":
+    case "CMS_NEWS_UPDATE":
       return "bg-indigo-50 text-indigo-700 border-indigo-200";
     case "CMS_ARTICLE_DELETE":
+    case "CMS_NEWS_DELETE":
       return "bg-rose-50 text-rose-700 border-rose-200";
     default:
       return "bg-gray-50 text-gray-700 border-gray-200";
   }
 }
+
 
 /* ---------- Drawer ---------- */
 

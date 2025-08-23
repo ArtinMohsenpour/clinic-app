@@ -82,6 +82,13 @@ model User {
   articlesAuthored Article[]    @relation("ArticleAuthor")
   articlesUpdated  Article[]    @relation("ArticleUpdatedBy")
 
+  // NEW:
+  newsAuthored News[] @relation("NewsAuthor")
+  newsUpdated  News[] @relation("NewsUpdatedBy")
+
+  educationsAuthored Education[] @relation("EducationAuthor")
+  educationsUpdated  Education[] @relation("EducationUpdatedBy")
+
   @@map("user")
 }
 
@@ -277,11 +284,17 @@ model MediaAsset {
   // NEW: back-relation for Article.cover
   coverOfArticles Article[] @relation("ArticleCover")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
   // where this asset is used
   articleMedias ArticleMedia[]
+
+  // NEW:
+  coverOfNews    News[]           @relation("NewsCover")
+  newsMedias     NewsMedia[]
+  educationMedia EducationMedia[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  coverOfEducation Education[] @relation("EducationCover")
 
   @@index([uploadedById])
   @@map("media_asset")
@@ -295,6 +308,10 @@ model Tag {
   // m2m
   articleTags ArticleTag[]
 
+  // NEW for news
+  newsTags      NewsTag[]
+  educationTags EducationTag[]
+
   @@map("tag")
 }
 
@@ -304,7 +321,10 @@ model Category {
   name String @unique
 
   // m2m
-  articleCategories ArticleCategory[]
+  articleCategories   ArticleCategory[]
+  // NEW for news
+  newsCategories      NewsCategory[]
+  educationCategories EducationCategory[]
 
   @@map("category")
 }
@@ -380,4 +400,123 @@ model ArticleMedia {
   @@id([articleId, mediaId])
   @@index([articleId, order])
   @@map("article_media")
+}
+
+// ---------- News ----------
+model News {
+  id          String        @id @default(uuid())
+  slug        String        @unique
+  title       String
+  excerpt     String?
+  body        Json
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+
+  // cover
+  coverId String?
+  cover   MediaAsset? @relation("NewsCover", fields: [coverId], references: [id], onDelete: SetNull)
+
+  // authorship
+  authorId    String
+  author      User    @relation("NewsAuthor", fields: [authorId], references: [id])
+  updatedById String?
+  updatedBy   User?   @relation("NewsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  // taxonomy & media
+  tags       NewsTag[]
+  categories NewsCategory[]
+  media      NewsMedia[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
+  @@map("news")
+}
+
+model NewsTag {
+  newsId String
+  tagId  String
+  news   News   @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([newsId, tagId])
+  @@map("news_tag")
+}
+
+model NewsCategory {
+  newsId     String
+  categoryId String
+  news       News     @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([newsId, categoryId])
+  @@map("news_category")
+}
+
+model NewsMedia {
+  newsId  String
+  mediaId String
+  order   Int    @default(0)
+
+  news  News       @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  media MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([newsId, mediaId])
+  @@index([newsId, order])
+  @@map("news_media")
+}
+
+// -------- Patient Education --------
+model Education {
+  id          String        @id @default(uuid())
+  title       String
+  slug        String        @unique
+  excerpt     String?
+  body        Json
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+  coverId     String?
+  cover       MediaAsset?   @relation("EducationCover", fields: [coverId], references: [id], onDelete: SetNull)
+
+  authorId    String
+  author      User    @relation("EducationAuthor", fields: [authorId], references: [id])
+  updatedById String?
+  updatedBy   User?   @relation("EducationUpdatedBy", fields: [updatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tags       EducationTag[]
+  categories EducationCategory[]
+  media      EducationMedia[]
+}
+
+model EducationTag {
+  educationId String
+  tagId       String
+  education   Education @relation(fields: [educationId], references: [id])
+  tag         Tag       @relation(fields: [tagId], references: [id])
+
+  @@id([educationId, tagId])
+}
+
+model EducationCategory {
+  educationId String
+  categoryId  String
+  education   Education @relation(fields: [educationId], references: [id])
+  category    Category  @relation(fields: [categoryId], references: [id])
+
+  @@id([educationId, categoryId])
+}
+
+model EducationMedia {
+  educationId String
+  mediaId     String
+  order       Int    @default(0)
+
+  education Education  @relation(fields: [educationId], references: [id])
+  media     MediaAsset @relation(fields: [mediaId], references: [id])
+
+  @@id([educationId, mediaId])
 }

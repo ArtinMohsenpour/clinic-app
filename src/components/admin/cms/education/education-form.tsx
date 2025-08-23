@@ -1,20 +1,24 @@
+// src/components/admin/cms/education/education-form.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Upload, X } from "lucide-react";
+import {
+  MultiImageUploader,
+  type GalleryItem,
+} from "@/components/admin/cms/ui/multi-image-uploader";
 
 type Status = "DRAFT" | "PUBLISHED" | "SCHEDULED" | "ARCHIVED";
-
-export type ArticleDTO = {
+type DTO = {
   id?: string;
   title: string;
   slug: string;
   excerpt?: string | null;
   body: { type: "markdown"; content: string } | unknown;
   status: Status;
-  publishedAt?: string | null; // ISO
+  publishedAt?: string | null;
   coverId?: string | null;
   tagIds?: string[];
   categoryIds?: string[];
@@ -29,42 +33,37 @@ function slugify(s: string) {
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
 }
+const TITLE_MAX = 120,
+  EXCERPT_MAX = 300,
+  SLUG_MAX = 200,
+  BODY_WORD_MAX = 3000;
+const COVER_ALLOWED = ["image/jpeg", "image/png", "image/webp"];
+const COVER_MAX_SIZE = 4 * 1024 * 1024;
 
-// ---- datetime helpers ----
-function toLocalDTInputValue(iso?: string | null) {
+function toLocalDT(iso?: string | null) {
   if (!iso) return "";
   const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(
     d.getHours()
-  )}:${pad(d.getMinutes())}`;
+  )}:${p(d.getMinutes())}`;
 }
-function fromLocalDTInputValue(v: string) {
+function fromLocalDT(v: string) {
   if (!v) return null;
   const d = new Date(v);
   return d.toISOString();
 }
 
-// ---- limits (adjust as you like) ----
-const TITLE_MAX = 120;
-const EXCERPT_MAX = 300;
-const SLUG_MAX = 200;
-const BODY_WORD_MAX = 3000;
-
-const COVER_ALLOWED = ["image/jpeg", "image/png", "image/webp"];
-const COVER_MAX_SIZE = 4 * 1024 * 1024;
-
-export default function ArticleForm({
+export default function EducationForm({
   mode,
-  articleId,
+  educationId,
   initial,
 }: {
   mode: "create" | "edit";
-  articleId?: string;
-  initial?: Partial<ArticleDTO>;
+  educationId?: string;
+  initial?: Partial<DTO>;
 }) {
   const router = useRouter();
-
   const [loading, setLoading] = useState(mode === "edit");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,30 +77,28 @@ export default function ArticleForm({
     (initial?.publishedAt as string | null) ?? null
   );
 
-  // Markdown-as-JSON
   const [bodyMd, setBodyMd] = useState(
     (typeof (initial?.body as any)?.content === "string"
       ? (initial?.body as any)?.content
       : "") ?? ""
   );
 
-  // ---- cover state ----
   const [coverId, setCoverId] = useState<string>(initial?.coverId ?? "");
   const [coverUrl, setCoverUrl] = useState<string>("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [gallery, setGallery] = useState<GalleryItem[]>([]);
 
-  // load when editing
   useEffect(() => {
-    if (mode !== "edit" || !articleId) return;
+    if (mode !== "edit" || !educationId) return;
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/admin/cms/articles/${articleId}`, {
+        const res = await fetch(`/api/admin/cms/education/${educationId}`, {
           cache: "no-store",
         });
-        if (!res.ok) throw new Error("خطا در دریافت مقاله");
+        if (!res.ok) throw new Error("خطا در دریافت مورد");
         const a = await res.json();
         setTitle(a.title ?? "");
         setSlug(a.slug ?? "");
@@ -117,26 +114,31 @@ export default function ArticleForm({
             ? JSON.stringify(a.body)
             : ""
         );
+
+        setGallery(
+          (a.media ?? []).map((m: any) => ({
+            id: m.media.id,
+            url: m.media.publicUrl,
+            alt: m.media.alt ?? null,
+          }))
+        );
+        setCoverId(a.coverId ?? "");
       } catch (e) {
         setError(e instanceof Error ? e.message : "خطای نامشخص");
       } finally {
         setLoading(false);
       }
     })();
-  }, [mode, articleId]);
+  }, [mode, educationId]);
 
-  // auto slug
   function handleTitleBlur() {
     if (!slug.trim()) setSlug(slugify(title));
   }
-
-  // word count
   const bodyWordCount = useMemo(
     () => (bodyMd ? bodyMd.trim().split(/\s+/).filter(Boolean).length : 0),
     [bodyMd]
   );
 
-  // validation
   const bad =
     title.trim().length < 2 ||
     title.length > TITLE_MAX ||
@@ -147,7 +149,6 @@ export default function ArticleForm({
     (status === "SCHEDULED" && !publishedAt) ||
     bodyWordCount > BODY_WORD_MAX;
 
-  // ---- cover upload ----
   function onPickCover(f: File | null) {
     if (!f) {
       setCoverFile(null);
@@ -207,7 +208,7 @@ export default function ArticleForm({
     }
     setSaving(true);
     try {
-      const payload: Partial<ArticleDTO> = {
+      const payload: Partial<DTO> = {
         title: title.trim(),
         slug: slug.trim(),
         excerpt: excerpt?.trim() || null,
@@ -217,27 +218,26 @@ export default function ArticleForm({
         coverId: coverId?.trim() || null,
         tagIds: [],
         categoryIds: [],
-        gallery: [],
+        gallery: gallery.map((g, idx) => ({ mediaId: g.id, order: idx })),
       };
-
       if (mode === "create") {
-        const res = await fetch("/api/admin/cms/articles", {
+        const res = await fetch("/api/admin/cms/education", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
         const j = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(j?.error || "ثبت مقاله ناموفق بود");
-        setSuccess("مقاله ایجاد شد");
-        router.push(`/admin/cms/articles/${j.id}`);
+        if (!res.ok) throw new Error(j?.error || "ثبت مورد ناموفق بود");
+        setSuccess("مورد ایجاد شد");
+        router.push(`/admin/cms/education/${j.id}`);
       } else {
-        const res = await fetch(`/api/admin/cms/articles/${articleId}`, {
+        const res = await fetch(`/api/admin/cms/education/${educationId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
         const j = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(j?.error || "ویرایش مقاله ناموفق بود");
+        if (!res.ok) throw new Error(j?.error || "ویرایش مورد ناموفق بود");
         setSuccess("تغییرات ذخیره شد");
       }
     } catch (e) {
@@ -265,13 +265,12 @@ export default function ArticleForm({
       className="p-6 pb-12 bg-gradient-to-b from-white to-gray-50 rounded-2xl shadow-md ring-1 ring-gray-100 space-y-6 select-none"
     >
       <h1 className="text-2xl md:text-3xl font-extrabold text-navbar-primary">
-        {mode === "create" ? "ایجاد مقاله" : "ویرایش مقاله"}
+        {mode === "create" ? "ایجاد آموزش" : "ویرایش آموزش"}
       </h1>
 
       <div className="rounded-2xl p-5 shadow-md border-r-7 border-r-navbar-secondary border border-cms-secondary">
-        {/* header with cover + fields */}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
-          {/* cover panel — bigger + stacked buttons */}
+          {/* cover */}
           <div className="w-full max-w-xs">
             <div className="aspect-[4/3] w-full overflow-hidden rounded-xl border bg-gray-50">
               {coverPreview || coverUrl ? (
@@ -287,11 +286,9 @@ export default function ArticleForm({
                 </div>
               )}
             </div>
-
             <div className="mt-3 grid grid-cols-1 gap-2">
               <label className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer hover:bg-gray-50">
-                <ImagePlus className="w-4 h-4" />
-                انتخاب تصویر
+                <ImagePlus className="w-4 h-4" /> انتخاب تصویر
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
@@ -299,7 +296,6 @@ export default function ArticleForm({
                   onChange={(e) => onPickCover(e.target.files?.[0] || null)}
                 />
               </label>
-
               {coverFile && (
                 <>
                   <button
@@ -320,12 +316,10 @@ export default function ArticleForm({
                     }}
                     className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm hover:bg-gray-50"
                   >
-                    <X className="w-4 h-4" />
-                    لغو
+                    <X className="w-4 h-4" /> لغو
                   </button>
                 </>
               )}
-
               {(coverUrl || coverId) && !coverFile && (
                 <button
                   type="button"
@@ -338,7 +332,6 @@ export default function ArticleForm({
                   حذف کاور
                 </button>
               )}
-
               <div className="text-xs text-gray-500 mt-1">
                 فرمت‌های مجاز: JPG, PNG, WEBP — حداکثر ۴ مگابایت
               </div>
@@ -372,7 +365,6 @@ export default function ArticleForm({
               }
               counter={`${slug.length}/${SLUG_MAX}`}
             />
-
             <Field
               label="چکیده (اختیاری)"
               value={excerpt ?? ""}
@@ -385,7 +377,6 @@ export default function ArticleForm({
                   : undefined
               }
             />
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 pr-1">
                 وضعیت
@@ -401,11 +392,10 @@ export default function ArticleForm({
                 <option value="ARCHIVED">بایگانی</option>
               </select>
             </div>
-
             <DateTimePicker
               label="تاریخ/زمان انتشار (اختیاری)"
-              value={toLocalDTInputValue(publishedAt)}
-              onChange={(v) => setPublishedAt(fromLocalDTInputValue(v))}
+              value={toLocalDT(publishedAt)}
+              onChange={(v) => setPublishedAt(fromLocalDT(v))}
               hint="برای زمان‌بندی، مقدار را پر کنید"
               error={
                 status === "SCHEDULED" && !publishedAt
@@ -413,8 +403,6 @@ export default function ArticleForm({
                   : undefined
               }
             />
-
-            {/* coverId debug/hidden if you want — I keep visible but subtle */}
             <Field
               label="شناسه کاور (coverId)"
               value={coverId}
@@ -424,11 +412,18 @@ export default function ArticleForm({
             />
           </div>
         </div>
+        <MultiImageUploader
+          value={gallery}
+          onChange={setGallery}
+          coverId={coverId}
+          onMakeCover={setCoverId}
+          title="گالری تصاویر (اختیاری)"
+        />
 
-        {/* body editor */}
+        {/* body */}
         <div className="mt-6">
           <label className="block text-sm font-medium text-gray-700 mb-1 pr-1">
-            متن مقاله (Markdown ساده)
+            متن آموزش (Markdown ساده)
           </label>
           <textarea
             className={`w-full min-h-[280px] rounded-xl border px-3 py-2 outline-none focus:ring-2 ${
@@ -449,6 +444,7 @@ export default function ArticleForm({
           </div>
         </div>
       </div>
+
       {success && <Banner kind="success" text={success} />}
       {error && <Banner kind="error" text={error} />}
 
@@ -456,14 +452,19 @@ export default function ArticleForm({
         <button
           type="submit"
           disabled={saving || bad}
-          className="px-6 h-11 rounded-xl bg-navbar-secondary text-white font-medium hover:bg-navbar-hover disabled:opacity-60 cursor-pointer"
+          className="px-6 h-11 rounded-xl bg-navbar-secondary text-white font-medium hover:bg-navbar-hover disabled:opacity-60"
         >
-          {saving ? "در حال ذخیره…" : mode === "create" ? "ایجاد" : "ذخیره"}
+          {" "}
+          {saving
+            ? "در حال ذخیره…"
+            : mode === "create"
+            ? "ایجاد"
+            : "ذخیره"}{" "}
         </button>
         <button
           type="button"
-          onClick={() => router.push("/admin/cms/articles")}
-          className="px-6 h-11 rounded-xl border hover:bg-gray-200  cursor-pointer"
+          onClick={() => router.push("/admin/cms/education")}
+          className="px-6 h-11 rounded-xl border hover:bg-gray-200"
         >
           بازگشت
         </button>
@@ -472,7 +473,7 @@ export default function ArticleForm({
   );
 }
 
-/* ——— DateTime picker (dropdown) ——— */
+/* DateTime picker (same pattern) */
 function DateTimePicker({
   label,
   value,
@@ -481,51 +482,46 @@ function DateTimePicker({
   error,
 }: {
   label: string;
-  value: string; // "YYYY-MM-DDTHH:MM" or ""
+  value: string;
   onChange: (v: string) => void;
   hint?: string;
   error?: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  const current = value || "";
-  const [datePart, timePart] = current ? current.split("T") : ["", ""];
-  const [dateStr, setDateStr] = useState(datePart || "");
-  const [timeStr, setTimeStr] = useState(timePart || "");
-
+  const [dateStr, timeStr] = (value || "").split("T").concat("") as [
+    string,
+    string
+  ];
+  const [d, setD] = useState(dateStr || "");
+  const [t, setT] = useState(timeStr || "");
   useEffect(() => {
-    setDateStr(datePart || "");
-    setTimeStr(timePart || "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const [dd, tt] = (value || "").split("T").concat("") as [string, string];
+    setD(dd || "");
+    setT(tt || "");
   }, [value]);
-
   useEffect(() => {
-    function onDoc(e: MouseEvent) {
+    const h = (e: MouseEvent) => {
       if (!open) return;
       if (ref.current && !ref.current.contains(e.target as Node))
         setOpen(false);
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
   }, [open]);
-
   function apply() {
-    if (!dateStr && !timeStr) {
+    if (!d && !t) {
       onChange("");
     } else {
-      const t = timeStr || "00:00";
-      onChange(`${dateStr}T${t}`);
+      onChange(`${d}T${t || "00:00"}`);
     }
     setOpen(false);
   }
-
   return (
     <div className="relative" ref={ref}>
       <label className="block text-sm font-medium text-gray-700 mb-1 pr-1">
         {label}
       </label>
-
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -539,31 +535,29 @@ function DateTimePicker({
           ? new Date(value).toLocaleString("fa-IR")
           : "انتخاب تاریخ و زمان"}
       </button>
-
       {open && (
         <div className="absolute z-50 mt-2 w-[min(360px,95vw)] rounded-xl border bg-white shadow-xl p-3 right-0">
           <div className="flex items-center gap-2">
             <input
               type="date"
               className="w-full rounded-lg border px-2 py-2 focus:ring-2 focus:ring-navbar-secondary"
-              value={dateStr}
-              onChange={(e) => setDateStr(e.target.value)}
+              value={d}
+              onChange={(e) => setD(e.target.value)}
             />
             <input
               type="time"
               className="w-full rounded-lg border px-2 py-2 focus:ring-2 focus:ring-navbar-secondary"
-              value={timeStr}
-              onChange={(e) => setTimeStr(e.target.value)}
+              value={t}
+              onChange={(e) => setT(e.target.value)}
             />
           </div>
-
           <div className="mt-3 flex items-center justify-between">
             <button
               type="button"
               className="px-3 py-1.5 rounded-lg border hover:bg-gray-50"
               onClick={() => {
-                setDateStr("");
-                setTimeStr("");
+                setD("");
+                setT("");
                 onChange("");
                 setOpen(false);
               }}
@@ -587,7 +581,6 @@ function DateTimePicker({
               </button>
             </div>
           </div>
-
           {hint && <div className="text-xs text-gray-500 mt-2">{hint}</div>}
           {error && <div className="text-xs text-rose-600 mt-1">{error}</div>}
         </div>
@@ -596,7 +589,6 @@ function DateTimePicker({
   );
 }
 
-/* — UI bits — */
 function Field({
   label,
   value,

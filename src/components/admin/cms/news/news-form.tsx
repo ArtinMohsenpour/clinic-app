@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Upload, X } from "lucide-react";
 
 type Status = "DRAFT" | "PUBLISHED" | "SCHEDULED" | "ARCHIVED";
 
-export type ArticleDTO = {
+export type NewsDTO = {
   id?: string;
   title: string;
   slug: string;
@@ -30,7 +30,7 @@ function slugify(s: string) {
     .replace(/-+/g, "-");
 }
 
-// ---- datetime helpers ----
+// datetime helpers
 function toLocalDTInputValue(iso?: string | null) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -41,11 +41,10 @@ function toLocalDTInputValue(iso?: string | null) {
 }
 function fromLocalDTInputValue(v: string) {
   if (!v) return null;
-  const d = new Date(v);
-  return d.toISOString();
+  return new Date(v).toISOString();
 }
 
-// ---- limits (adjust as you like) ----
+// limits
 const TITLE_MAX = 120;
 const EXCERPT_MAX = 300;
 const SLUG_MAX = 200;
@@ -54,14 +53,14 @@ const BODY_WORD_MAX = 3000;
 const COVER_ALLOWED = ["image/jpeg", "image/png", "image/webp"];
 const COVER_MAX_SIZE = 4 * 1024 * 1024;
 
-export default function ArticleForm({
+export default function NewsForm({
   mode,
-  articleId,
+  newsId,
   initial,
 }: {
   mode: "create" | "edit";
-  articleId?: string;
-  initial?: Partial<ArticleDTO>;
+  newsId?: string;
+  initial?: Partial<NewsDTO>;
 }) {
   const router = useRouter();
 
@@ -85,7 +84,7 @@ export default function ArticleForm({
       : "") ?? ""
   );
 
-  // ---- cover state ----
+  // cover
   const [coverId, setCoverId] = useState<string>(initial?.coverId ?? "");
   const [coverUrl, setCoverUrl] = useState<string>("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -94,27 +93,27 @@ export default function ArticleForm({
 
   // load when editing
   useEffect(() => {
-    if (mode !== "edit" || !articleId) return;
+    if (mode !== "edit" || !newsId) return;
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/admin/cms/articles/${articleId}`, {
+        const res = await fetch(`/api/admin/cms/news/${newsId}`, {
           cache: "no-store",
         });
-        if (!res.ok) throw new Error("خطا در دریافت مقاله");
-        const a = await res.json();
-        setTitle(a.title ?? "");
-        setSlug(a.slug ?? "");
-        setExcerpt(a.excerpt ?? "");
-        setStatus(a.status ?? "DRAFT");
-        setPublishedAt(a.publishedAt ?? null);
-        setCoverId(a.coverId ?? "");
-        setCoverUrl(a.cover?.publicUrl ?? "");
+        if (!res.ok) throw new Error("خطا در دریافت خبر");
+        const n = await res.json();
+        setTitle(n.title ?? "");
+        setSlug(n.slug ?? "");
+        setExcerpt(n.excerpt ?? "");
+        setStatus(n.status ?? "DRAFT");
+        setPublishedAt(n.publishedAt ?? null);
+        setCoverId(n.coverId ?? "");
+        setCoverUrl(n.cover?.publicUrl ?? "");
         setBodyMd(
-          typeof a.body?.content === "string"
-            ? a.body.content
-            : a.body
-            ? JSON.stringify(a.body)
+          typeof n.body?.content === "string"
+            ? n.body.content
+            : n.body
+            ? JSON.stringify(n.body)
             : ""
         );
       } catch (e) {
@@ -123,7 +122,7 @@ export default function ArticleForm({
         setLoading(false);
       }
     })();
-  }, [mode, articleId]);
+  }, [mode, newsId]);
 
   // auto slug
   function handleTitleBlur() {
@@ -147,7 +146,7 @@ export default function ArticleForm({
     (status === "SCHEDULED" && !publishedAt) ||
     bodyWordCount > BODY_WORD_MAX;
 
-  // ---- cover upload ----
+  // cover upload
   function onPickCover(f: File | null) {
     if (!f) {
       setCoverFile(null);
@@ -207,7 +206,7 @@ export default function ArticleForm({
     }
     setSaving(true);
     try {
-      const payload: Partial<ArticleDTO> = {
+      const payload: Partial<NewsDTO> = {
         title: title.trim(),
         slug: slug.trim(),
         excerpt: excerpt?.trim() || null,
@@ -221,23 +220,23 @@ export default function ArticleForm({
       };
 
       if (mode === "create") {
-        const res = await fetch("/api/admin/cms/articles", {
+        const res = await fetch("/api/admin/cms/news", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
         const j = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(j?.error || "ثبت مقاله ناموفق بود");
-        setSuccess("مقاله ایجاد شد");
-        router.push(`/admin/cms/articles/${j.id}`);
+        if (!res.ok) throw new Error(j?.error || "ثبت خبر ناموفق بود");
+        setSuccess("خبر ایجاد شد");
+        router.push(`/admin/cms/news/${j.id}`);
       } else {
-        const res = await fetch(`/api/admin/cms/articles/${articleId}`, {
+        const res = await fetch(`/api/admin/cms/news/${newsId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
         const j = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(j?.error || "ویرایش مقاله ناموفق بود");
+        if (!res.ok) throw new Error(j?.error || "ویرایش خبر ناموفق بود");
         setSuccess("تغییرات ذخیره شد");
       }
     } catch (e) {
@@ -258,6 +257,8 @@ export default function ArticleForm({
     );
   }
 
+  const titleText = mode === "create" ? "ایجاد خبر" : "ویرایش خبر";
+
   return (
     <form
       onSubmit={onSubmit}
@@ -265,13 +266,14 @@ export default function ArticleForm({
       className="p-6 pb-12 bg-gradient-to-b from-white to-gray-50 rounded-2xl shadow-md ring-1 ring-gray-100 space-y-6 select-none"
     >
       <h1 className="text-2xl md:text-3xl font-extrabold text-navbar-primary">
-        {mode === "create" ? "ایجاد مقاله" : "ویرایش مقاله"}
+        {titleText}
       </h1>
 
+      {/* form card */}
       <div className="rounded-2xl p-5 shadow-md border-r-7 border-r-navbar-secondary border border-cms-secondary">
-        {/* header with cover + fields */}
+        {/* cover + fields */}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
-          {/* cover panel — bigger + stacked buttons */}
+          {/* cover panel */}
           <div className="w-full max-w-xs">
             <div className="aspect-[4/3] w-full overflow-hidden rounded-xl border bg-gray-50">
               {coverPreview || coverUrl ? (
@@ -358,6 +360,7 @@ export default function ArticleForm({
                 title.length > TITLE_MAX ? "طول عنوان زیاد است" : undefined
               }
             />
+
             <Field
               label="اسلاگ (slug)"
               value={slug}
@@ -414,7 +417,7 @@ export default function ArticleForm({
               }
             />
 
-            {/* coverId debug/hidden if you want — I keep visible but subtle */}
+            {/* keep for debug until Media Library lands */}
             <Field
               label="شناسه کاور (coverId)"
               value={coverId}
@@ -428,7 +431,7 @@ export default function ArticleForm({
         {/* body editor */}
         <div className="mt-6">
           <label className="block text-sm font-medium text-gray-700 mb-1 pr-1">
-            متن مقاله (Markdown ساده)
+            متن خبر (Markdown ساده)
           </label>
           <textarea
             className={`w-full min-h-[280px] rounded-xl border px-3 py-2 outline-none focus:ring-2 ${
@@ -438,7 +441,7 @@ export default function ArticleForm({
             }`}
             value={bodyMd}
             onChange={(e) => setBodyMd(e.target.value)}
-            placeholder="## عنوان بخش..."
+            placeholder="## تیتر بخش..."
           />
           <div
             className={`text-xs mt-1 ${
@@ -449,6 +452,7 @@ export default function ArticleForm({
           </div>
         </div>
       </div>
+
       {success && <Banner kind="success" text={success} />}
       {error && <Banner kind="error" text={error} />}
 
@@ -456,14 +460,14 @@ export default function ArticleForm({
         <button
           type="submit"
           disabled={saving || bad}
-          className="px-6 h-11 rounded-xl bg-navbar-secondary text-white font-medium hover:bg-navbar-hover disabled:opacity-60 cursor-pointer"
+          className="px-6 h-11 rounded-xl bg-navbar-secondary text-white font-medium hover:bg-navbar-hover disabled:opacity-60"
         >
           {saving ? "در حال ذخیره…" : mode === "create" ? "ایجاد" : "ذخیره"}
         </button>
         <button
           type="button"
-          onClick={() => router.push("/admin/cms/articles")}
-          className="px-6 h-11 rounded-xl border hover:bg-gray-200  cursor-pointer"
+          onClick={() => router.push("/admin/cms/news")}
+          className="px-6 h-11 rounded-xl border hover:bg-gray-50"
         >
           بازگشت
         </button>

@@ -1,39 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { STAFF_MANAGEMENT_ALLOWED_ROLES } from "@/config/constants/rbac";
 import { writeFile, mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
+import { requireCmsAccess } from "../../_auth";
 
 export const runtime = "nodejs";
-
-// ---- RBAC gate (same behavior you already use)
-async function gate(req: NextRequest) {
-  const session = await auth.api.getSession({ headers: req.headers });
-  if (!session?.user)
-    return {
-      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    };
-
-  const can = await prisma.user.findFirst({
-    where: {
-      id: session.user.id,
-      roles: {
-        some: {
-          role: { key: { in: Array.from(STAFF_MANAGEMENT_ALLOWED_ROLES) } },
-        },
-      },
-    },
-    select: { id: true },
-  });
-  if (!can)
-    return {
-      error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
-    };
-
-  return { session };
-}
 
 // ---- Config
 const ALLOWED = ["image/jpeg", "image/png", "image/webp"] as const;
@@ -41,9 +13,9 @@ const MAX_SIZE = 4 * 1024 * 1024; // 4MB
 const PUBLIC_DIR = "uploads/media"; // served as /uploads/media/...
 
 export async function POST(req: NextRequest) {
-  const g = await gate(req);
-  if ("error" in g) return g.error;
-  const { session } = g;
+  const gate = await requireCmsAccess(req);
+  if ("error" in gate) return gate.error;
+  const { session } = gate;
 
   const form = await req.formData();
   const file = form.get("file");

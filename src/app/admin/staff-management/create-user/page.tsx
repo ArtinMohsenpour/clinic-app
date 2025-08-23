@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { STAFF_MANAGEMENT_ALLOWED_ROLES } from "@/config/constants/rbac";
+import CmsBreadcrumbs from "@/components/admin/cms/ui/cms-bread-crumbs";
 
 export const revalidate = 0;
 
@@ -51,5 +52,15 @@ export default async function CreateUserPage() {
     );
   } // <-- id = UUID, key = "admin"
 
-  return <SignupForm roles={roles} />;
+  return (
+    <div className="space-y-4">
+      <CmsBreadcrumbs
+        items={[
+          { label: "مدیریت کارکنان", href: "/admin/staff-management" },
+          { label: "ایجاد کاربر جدید", href: "/admin/create-user" },
+        ]}
+      />
+      <SignupForm roles={roles} />
+    </div>
+  );
 }
