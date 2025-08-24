@@ -19,13 +19,19 @@ type Resp = {
   items: Row[];
 };
 
-const ACTIONS = [
+export const ACTIONS = [
   "CMS_ARTICLE_CREATE",
   "CMS_ARTICLE_UPDATE",
   "CMS_ARTICLE_DELETE",
   "CMS_NEWS_CREATE",
   "CMS_NEWS_UPDATE",
   "CMS_NEWS_DELETE",
+  "CMS_EDU_CREATE",
+  "CMS_EDU_UPDATE",
+  "CMS_EDU_DELETE",
+  "CMS_FORM_CREATE",
+  "CMS_FORM_UPDATE",
+  "CMS_FORM_DELETE",
 ] as const;
 
 export default function ActivityTable() {

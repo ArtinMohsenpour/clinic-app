@@ -1,70 +1,114 @@
-import { NextRequest, NextResponse } from "next/server";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { NextResponse } from "next/server";
+import crypto from "crypto";
+import path from "path";
 import { prisma } from "@/lib/prisma";
-import { writeFile, mkdir } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
-import path from "node:path";
-import { requireCmsAccess } from "../../_auth";
+import { getStorage } from "@/lib/storage";
+import { auth } from "@/lib/auth";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-// ---- Config
-const ALLOWED = ["image/jpeg", "image/png", "image/webp"] as const;
-const MAX_SIZE = 4 * 1024 * 1024; // 4MB
-const PUBLIC_DIR = "uploads/media"; // served as /uploads/media/...
+const ALLOWED_MIME = new Set<string>([
+  // docs
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  // images
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
 
-export async function POST(req: NextRequest) {
-  const gate = await requireCmsAccess(req);
-  if ("error" in gate) return gate.error;
-  const { session } = gate;
+const MAX_BYTES = 24 * 1024 * 1024; // 24MB
+
+function extFromMime(mime: string, filename?: string | null) {
+  // Prefer clean mapping
+  switch (mime) {
+    case "application/pdf":
+      return "pdf";
+    case "application/msword":
+      return "doc";
+    case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+      return "docx";
+    case "image/jpeg":
+      return "jpg";
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+  }
+  // Fallback: take from filename if present
+  if (filename) {
+    const ext = path.extname(filename).replace(/^\./, "").toLowerCase();
+    if (ext) return ext;
+  }
+  // Last resort
+  return "bin";
+}
+
+export async function POST(req: Request) {
+  const session = await auth.api.getSession({ headers: req.headers });
+  const userId = session?.user?.id ?? null;
 
   const form = await req.formData();
   const file = form.get("file");
-  const alt = ((form.get("alt") as string) || "").trim() || null;
-
   if (!(file instanceof File)) {
-    return NextResponse.json({ error: "no_file" }, { status: 400 });
-  }
-  // @ts-expect-error mime literal
-  if (!ALLOWED.includes(file.type)) {
-    return NextResponse.json({ error: "unsupported_type" }, { status: 400 });
-  }
-  if (file.size > MAX_SIZE) {
-    return NextResponse.json({ error: "too_large" }, { status: 400 });
+    return NextResponse.json({ error: "missing_file" }, { status: 400 });
   }
 
-  // --- Save to /public/uploads/media
-  const id = randomUUID();
-  const ext =
-    file.type === "image/png"
-      ? "png"
-      : file.type === "image/webp"
-      ? "webp"
-      : "jpg";
-  const filename = `${id}.${ext}`;
+  const mime = file.type || "application/octet-stream";
+  if (!ALLOWED_MIME.has(mime)) {
+    return NextResponse.json({ error: "unsupported_type" }, { status: 415 });
+  }
+  if (file.size > MAX_BYTES) {
+    return NextResponse.json({ error: "file_too_large" }, { status: 413 });
+  }
 
-  // For file system: absolute path; for DB/URL: forward-slash relative
-  const relKey = `${PUBLIC_DIR}/${filename}`; // "uploads/media/<id>.jpg"
-  const absPath = path.join(process.cwd(), "public", PUBLIC_DIR, filename); // .../public/uploads/media/<id>.jpg
+  // Build storage key like: media/2025/08/abc12345.docx
+  const now = new Date();
+  const yy = String(now.getUTCFullYear());
+  const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const rand = crypto.randomBytes(10).toString("hex");
+  const ext = extFromMime(mime, (file as any).name);
+  const key = `media/${yy}/${mm}/${rand}.${ext}`;
 
-  await mkdir(path.dirname(absPath), { recursive: true });
-  await writeFile(absPath, Buffer.from(await file.arrayBuffer()));
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
 
-  const asset = await prisma.mediaAsset.create({
-    data: {
-      id,
-      fileKey: relKey,
-      publicUrl: `/${relKey}`, // served statically
-      alt,
-      mimeType: file.type,
-      size: file.size,
-      uploadedById: session.user.id,
-    },
-    select: { id: true, publicUrl: true, alt: true },
+  const storage = getStorage();
+  const saved = await storage.save({
+    buffer,
+    key,
+    contentType: mime,
   });
 
-  // Match the front-end expectation: { id, url, alt }
-  return NextResponse.json(
-    { id: asset.id, url: asset.publicUrl, alt: asset.alt },
-    { status: 201 }
-  );
+  // For images, width/height are optional – store nulls unless you add a probe step
+  const asset = await prisma.mediaAsset.create({
+    data: {
+      fileKey: saved.key,
+      publicUrl: saved.url,
+      alt: (file as any).name || null,
+      mimeType: mime,
+      size: file.size,
+      width: null,
+      height: null,
+      uploadedById: userId,
+    },
+    select: { id: true, publicUrl: true, mimeType: true, size: true },
+  });
+
+  // Audit (best-effort)
+  try {
+    await prisma.auditLog.create({
+      data: {
+        actorId: userId ?? undefined,
+        action: "CMS_MEDIA_UPLOAD",
+        targetId: asset.id,
+        meta: { mime: asset.mimeType, size: asset.size, url: asset.publicUrl },
+      },
+    });
+  } catch {}
+
+  return NextResponse.json({ id: asset.id, url: asset.publicUrl });
 }

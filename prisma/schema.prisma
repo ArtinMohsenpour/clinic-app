@@ -26,6 +26,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ========= new enums =========
+enum FormFileKind {
+  ADMISSION
+  CONSENT
+  PRE_VISIT
+  INSURANCE
+  OTHER
+}
+
+enum FormAssetRole {
+  ATTACHMENT
+  IMAGE
+}
+
 // --------- RBAC ---------
 
 model Role {
@@ -88,6 +102,12 @@ model User {
 
   educationsAuthored Education[] @relation("EducationAuthor")
   educationsUpdated  Education[] @relation("EducationUpdatedBy")
+
+  faqsAuthored Faq[] @relation("FaqAuthor")
+  faqsUpdated  Faq[] @relation("FaqUpdatedBy")
+
+  formFilesAuthored FormFile[] @relation("FormFileAuthor")
+  formFilesUpdated  FormFile[] @relation("FormFileUpdatedBy")
 
   @@map("user")
 }
@@ -292,9 +312,14 @@ model MediaAsset {
   newsMedias     NewsMedia[]
   educationMedia EducationMedia[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
   coverOfEducation Education[] @relation("EducationCover")
+
+  // Forms & Files relations
+  formPrimaryOf FormFile[]      @relation("FormPrimaryFile")
+  formPreviewOf FormFile[]      @relation("FormPreviewImage")
+  formAssets    FormFileAsset[]
 
   @@index([uploadedById])
   @@map("media_asset")
@@ -312,6 +337,10 @@ model Tag {
   newsTags      NewsTag[]
   educationTags EducationTag[]
 
+  faqTags FaqTag[]
+
+  formFileTags FormFileTag[]
+
   @@map("tag")
 }
 
@@ -325,6 +354,10 @@ model Category {
   // NEW for news
   newsCategories      NewsCategory[]
   educationCategories EducationCategory[]
+
+  faqCategories FaqCategory[]
+
+  formFileCategories FormFileCategory[]
 
   @@map("category")
 }
@@ -519,4 +552,136 @@ model EducationMedia {
   media     MediaAsset @relation(fields: [mediaId], references: [id])
 
   @@id([educationId, mediaId])
+}
+
+// ---------- FAQ ----------
+model Faq {
+  id          String        @id @default(uuid())
+  slug        String        @unique
+  question    String
+  answer      Json
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+
+  // Ordering & pinning (per category UX — you can sort by order desc then pinned)
+  isPinned Boolean @default(false)
+  order    Int     @default(0)
+
+  // Authors
+  authorId String
+  author   User   @relation("FaqAuthor", fields: [authorId], references: [id])
+
+  updatedById String?
+  updatedBy   User?   @relation("FaqUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  // Taxonomy
+  tags       FaqTag[]
+  categories FaqCategory[]
+
+  // Simple metrics (optional, handy later)
+  views      Int @default(0)
+  helpfulYes Int @default(0)
+  helpfulNo  Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([order])
+  @@map("faq")
+}
+
+model FaqTag {
+  faqId String
+  tagId String
+
+  faq Faq @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([faqId, tagId])
+  @@map("faq_tag")
+}
+
+model FaqCategory {
+  faqId      String
+  categoryId String
+
+  faq      Faq      @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([faqId, categoryId])
+  @@map("faq_category")
+}
+
+// ========= new models =========
+model FormFile {
+  id          String        @id @default(uuid())
+  title       String
+  slug        String        @unique
+  description String?
+  kind        FormFileKind?
+  language    String? // e.g. "fa", "en"
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+
+  // Primary downloadable file (pdf/doc/image)
+  primaryFileId String?
+  primaryFile   MediaAsset? @relation("FormPrimaryFile", fields: [primaryFileId], references: [id], onDelete: SetNull)
+
+  // Optional preview image (thumbnail/cover)
+  previewImageId String?
+  previewImage   MediaAsset? @relation("FormPreviewImage", fields: [previewImageId], references: [id], onDelete: SetNull)
+
+  // Authorship
+  authorId    String
+  author      User    @relation("FormFileAuthor", fields: [authorId], references: [id])
+  updatedById String?
+  updatedBy   User?   @relation("FormFileUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  // Taxonomy & attachments
+  tags       FormFileTag[]
+  categories FormFileCategory[]
+  assets     FormFileAsset[] // attachments (images, extra docs)
+
+  downloads Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
+  @@map("form_file")
+}
+
+model FormFileAsset {
+  formFileId String
+  mediaId    String
+  order      Int           @default(0)
+  role       FormAssetRole @default(ATTACHMENT)
+
+  form  FormFile   @relation(fields: [formFileId], references: [id], onDelete: Cascade)
+  media MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([formFileId, mediaId])
+  @@index([formFileId, order])
+  @@map("form_file_asset")
+}
+
+model FormFileTag {
+  formFileId String
+  tagId      String
+  formFile   FormFile @relation(fields: [formFileId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([formFileId, tagId])
+  @@map("form_file_tag")
+}
+
+model FormFileCategory {
+  formFileId String
+  categoryId String
+  formFile   FormFile @relation(fields: [formFileId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([formFileId, categoryId])
+  @@map("form_file_category")
 }
