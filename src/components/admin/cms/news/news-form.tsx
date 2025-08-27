@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ImagePlus, Upload, X } from "lucide-react";
 
 type Status = "DRAFT" | "PUBLISHED" | "SCHEDULED" | "ARCHIVED";
+type BranchOption = { id: string; name: string };
 
 export type NewsDTO = {
   id?: string;
@@ -18,6 +19,7 @@ export type NewsDTO = {
   coverId?: string | null;
   tagIds?: string[];
   categoryIds?: string[];
+  branchId?: string | null;
   gallery?: Array<{ mediaId: string; order?: number }>;
 };
 
@@ -76,6 +78,9 @@ export default function NewsForm({
   const [publishedAt, setPublishedAt] = useState<string | null>(
     (initial?.publishedAt as string | null) ?? null
   );
+  const [branchId, setBranchId] = useState<string>(""); // NEW
+  const [branchOptions, setBranchOptions] = useState<BranchOption[]>([]); // NEW
+  const [branchesLoading, setBranchesLoading] = useState(false);
 
   // Markdown-as-JSON
   const [bodyMd, setBodyMd] = useState(
@@ -109,6 +114,7 @@ export default function NewsForm({
         setPublishedAt(n.publishedAt ?? null);
         setCoverId(n.coverId ?? "");
         setCoverUrl(n.cover?.publicUrl ?? "");
+        setBranchId((n.branches?.[0]?.branchId as string) ?? "");
         setBodyMd(
           typeof n.body?.content === "string"
             ? n.body.content
@@ -123,6 +129,55 @@ export default function NewsForm({
       }
     })();
   }, [mode, newsId]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setBranchesLoading(true);
+
+        // Try the simple options endpoint first
+        let opts: BranchOption[] = [];
+        const r = await fetch("/api/admin/cms/branches/options", {
+          cache: "no-store",
+        });
+        if (r.ok) {
+          const j = await r.json();
+          if (Array.isArray(j)) {
+            opts = j as BranchOption[];
+          } else if (Array.isArray(j?.items)) {
+            // In case someone wires options to return {items: [...]}
+            opts = (j.items as any[]).map((it) =>
+              it?.branch ? { id: it.branch.id, name: it.branch.name } : it
+            );
+          }
+        }
+
+        // Fallback to the paginated branches list if options returned nothing
+        if (!opts.length) {
+          const r2 = await fetch(
+            "/api/admin/cms/branches?page=1&pageSize=200",
+            { cache: "no-store" }
+          );
+          if (r2.ok) {
+            const j2 = await r2.json();
+            if (Array.isArray(j2?.items)) {
+              opts = j2.items
+                .map((it: any) => it?.branch)
+                .filter(Boolean)
+                .map((b: any) => ({
+                  id: b.id as string,
+                  name: (b.name as string) ?? "",
+                }));
+            }
+          }
+        }
+
+        setBranchOptions(opts);
+      } finally {
+        setBranchesLoading(false);
+      }
+    })();
+  }, []);
 
   // auto slug
   function handleTitleBlur() {
@@ -216,6 +271,7 @@ export default function NewsForm({
         coverId: coverId?.trim() || null,
         tagIds: [],
         categoryIds: [],
+        branchId: branchId || null,
         gallery: [],
       };
 
@@ -426,6 +482,26 @@ export default function NewsForm({
               hint="پس از آپلود به‌طور خودکار پر می‌شود"
             />
           </div>
+        </div>
+        <div>
+          <label className="px-2 block text-sm font-medium text-gray-700 mb-1 pr-1">
+            شعبه
+          </label>
+          <select
+            className="w-[50%]  rounded-xl border px-5 py-2 bg-white focus:ring-2 focus:ring-navbar-secondary"
+            value={branchId}
+            onChange={(e) => setBranchId(e.target.value)}
+            disabled={branchesLoading}
+          >
+            <option value="">
+              {branchesLoading ? "در حال بارگذاری…" : "— بدون شعبه —"}
+            </option>
+            {branchOptions.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* body editor */}

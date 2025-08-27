@@ -30,6 +30,7 @@ const CreateSchema = z
     coverId: z.string().uuid().nullable().optional(),
     tagIds: z.array(z.string().uuid()).optional().default([]),
     categoryIds: z.array(z.string().uuid()).optional().default([]),
+    branchId: z.string().uuid().nullable().optional(),
     gallery: z
       .array(
         z.object({
@@ -173,6 +174,10 @@ export async function POST(req: Request) {
           order: g.order ?? 0,
         })),
       },
+      // NEW: branch (optional)
+      ...(body.branchId
+        ? { branches: { create: { branchId: body.branchId } } }
+        : {}),
     },
     select: { id: true, slug: true, status: true },
   });

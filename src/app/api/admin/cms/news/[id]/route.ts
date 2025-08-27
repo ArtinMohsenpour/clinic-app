@@ -31,6 +31,7 @@ const PatchSchema = z
     coverId: z.string().uuid().nullable().optional(),
     tagIds: z.array(z.string().uuid()).optional(),
     categoryIds: z.array(z.string().uuid()).optional(),
+    branchId: z.string().uuid().nullable().optional(),
     gallery: z
       .array(
         z.object({
@@ -61,7 +62,7 @@ const PatchSchema = z
   });
 
 export async function GET(_req: Request, ctx: { params: Promise<IdParam> }) {
-   const gate = await requireCmsAccess(_req);
+  const gate = await requireCmsAccess(_req);
   if ("error" in gate) return gate.error;
 
   const { id } = await ctx.params;
@@ -86,6 +87,13 @@ export async function GET(_req: Request, ctx: { params: Promise<IdParam> }) {
         },
         orderBy: { order: "asc" },
       },
+      branches: {
+        select: {
+          branchId: true,
+          branch: { select: { id: true, name: true } },
+        },
+        orderBy: { branchId: "asc" },
+      },
     },
   });
 
@@ -94,7 +102,7 @@ export async function GET(_req: Request, ctx: { params: Promise<IdParam> }) {
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
-   const gate = await requireCmsAccess(req);
+  const gate = await requireCmsAccess(req);
   if ("error" in gate) return gate.error;
   const { session } = gate;
   const { id } = await ctx.params;
@@ -183,6 +191,14 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
             order: g.order ?? 0,
           })),
           skipDuplicates: true,
+        });
+      }
+    }
+    if (body.branchId !== undefined) {
+      await tx.newsBranch.deleteMany({ where: { newsId: id } });
+      if (body.branchId) {
+        await tx.newsBranch.create({
+          data: { newsId: id, branchId: body.branchId },
         });
       }
     }
