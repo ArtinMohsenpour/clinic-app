@@ -16,6 +16,7 @@ type ListItem = {
   author: { id: string; name: string | null } | null;
   cover: { id: string; publicUrl: string | null; alt: string | null } | null;
   _count: { tags: number; categories: number; media: number };
+  branches?: { branch: { id: string; name: string } }[];
 };
 
 type ListResponse = {
@@ -159,7 +160,7 @@ export default function NewsTable() {
               <th className="p-3 w-20">کاور</th>
               <th className="p-3">عنوان / slug</th>
               <th className="p-3">وضعیت</th>
-              <th className="p-3">نویسنده</th>
+              <th className="p-3">شعبه</th>
               <th className="p-3">به‌روزرسانی</th>
               <th className="p-3">انتشار</th>
               <th className="p-3 w-40">اقدامات</th>
@@ -213,7 +214,9 @@ export default function NewsTable() {
                     <StatusBadge status={n.status} />
                   </td>
 
-                  <td className="p-3 align-middle">{n.author?.name ?? "—"}</td>
+                  <td className="p-3 align-middle">
+                    {n.branches?.[0]?.branch?.name ?? "—"}
+                  </td>
 
                   <td className="p-3 text-xs font-semibold align-middle text-gray-600">
                     {new Date(n.updatedAt).toLocaleDateString("fa-IR")}

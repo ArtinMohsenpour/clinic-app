@@ -112,6 +112,13 @@ export async function GET(req: Request) {
         author: { select: { id: true, name: true } },
         cover: { select: { id: true, publicUrl: true, alt: true } },
         _count: { select: { tags: true, categories: true, media: true } },
+        branches: {
+          select: {
+            branch: { select: { id: true, name: true } },
+          },
+          orderBy: { branchId: "asc" },
+          take: 1,
+        },
       },
     }),
   ]);
