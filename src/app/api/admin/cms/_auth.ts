@@ -4,20 +4,43 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { CMS_ALLOWED_ROLES } from "@/config/constants/rbac";
 
-export async function requireCmsAccess(req: Request) {
+type GateOk = {
+  session: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+};
+type GateErr = { error: NextResponse };
+
+export async function requireCmsAccess(
+  req: Request
+): Promise<GateOk | GateErr> {
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session?.user) {
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+    return {
+      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
   }
-  const allowed = await prisma.user.findFirst({
+
+  // Optional bypass for local/dev
+  if (process.env.SKIP_RBAC === "1") return { session };
+
+  const uid = session.user.id;
+
+  // Case-insensitive match against allowed role keys, using user_role → role.key
+  const allowedKeys = Array.from(CMS_ALLOWED_ROLES);
+  const ok = await prisma.userRole.findFirst({
     where: {
-      id: session.user.id,
-      roles: { some: { role: { key: { in: Array.from(CMS_ALLOWED_ROLES) } } } },
+      userId: uid,
+      OR: allowedKeys.map((k) => ({
+        role: { key: { equals: k, mode: "insensitive" } },
+      })),
     },
-    select: { id: true },
+    select: { userId: true },
   });
-  if (!allowed) {
-    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+
+  if (!ok) {
+    return {
+      error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+    };
   }
+
   return { session };
 }

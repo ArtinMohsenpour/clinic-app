@@ -7,7 +7,7 @@ import {
   BookOpen,
   HelpCircle,
   FileDown,
-  Images,
+  Landmark,
   Building2,
   Stethoscope,
   ShieldCheck,
@@ -32,6 +32,7 @@ type ModuleKey =
   | "departments"
   | "insurance"
   | "schedules"
+  | "branches"
   | "hero"
   | "pages"
   | "navigation"
@@ -103,29 +104,21 @@ const MODULES: Array<{
   {
     key: "forms",
     title: "فرم‌ها و فایل‌ها",
-    description: "پذیرش، رضایت‌نامه، آمادگی مراجعه.",
+    description: "پذیرش، رضایت‌نامه.",
     hrefManage: "/admin/cms/forms",
     hrefNew: "/admin/cms/forms/new",
     icon: FileDown,
     group: "Content",
   },
-  {
-    key: "media",
-    title: "کتابخانه رسانه",
-    description: "تصاویر و فایل‌های مشترک.",
-    hrefManage: "/admin/cms/media",
-    icon: Images,
-    group: "Content",
-  },
 
   // داده‌های کلینیک
+
   {
-    key: "departments",
-    title: "دپارتمان‌ها",
-    description: "بخش‌های کلینیک.",
-    hrefManage: "/admin/cms/departments",
-    hrefNew: "/admin/cms/departments/new",
-    icon: Building2,
+    key: "branches",
+    title: "شعبه‌ها",
+    description: "صفحه شعبه، اطلاعات تماس، گالری.",
+    hrefManage: "/admin/cms/branches", // list/select a branch to edit its content
+    icon: Landmark,
     group: "Clinic Data",
   },
   {

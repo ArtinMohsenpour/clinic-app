@@ -2,7 +2,7 @@
 import BranchesClient from "@/components/admin/settings/branches-client";
 import { prisma } from "@/lib/prisma";
 import { unstable_cache } from "next/cache";
-
+export const revalidate = 0; 
 // Cache DB result and associate it to the "branches" tag.
 // Your POST/PATCH routes already call revalidateTag("branches").
 const getBranchesCached = unstable_cache(

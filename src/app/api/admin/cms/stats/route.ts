@@ -5,7 +5,6 @@ import { auth } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-// roles allowed to see Recent Activity widget
 const ACTIVITY_ROLES = new Set([
   "it_manager",
   "ceo",
@@ -14,13 +13,11 @@ const ACTIVITY_ROLES = new Set([
 ]);
 
 export async function GET(req: Request) {
-  // auth (soft): anyone signed-in can read CMS stats
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // fetch role keys to compute activity visibility
   const me = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { roles: { select: { role: { select: { key: true } } } } },
@@ -30,7 +27,6 @@ export async function GET(req: Request) {
     ACTIVITY_ROLES.has(k)
   );
 
-  // counts
   const [
     // Articles
     articlesTotal,
@@ -48,35 +44,60 @@ export async function GET(req: Request) {
     faqTotal,
     faqDrafts,
     faqPublished,
-    // Review queue (latest edited items needing attention)
+    // BranchCMS
+    branchesTotal,
+    branchesDrafts,
+    branchesPublished,
+    // Forms (FormFile)
+    formsTotal,
+    formsDrafts,
+    formsPublished,
+    // Services  ⬅️ NEW
+    servicesTotal,
+    servicesDrafts,
+    servicesPublished,
+    // Review queues
     reviewArticles,
     reviewNews,
     reviewEdu,
     reviewFaq,
-    // Recent activity (audit logs)
+    reviewBranches,
+    reviewForms,
+    reviewServices, // ⬅️ NEW
+    // Activity
     activity,
   ] = await Promise.all([
-    // Articles
+    // ----- counts -----
     prisma.article.count(),
     prisma.article.count({ where: { status: "DRAFT" } }),
     prisma.article.count({ where: { status: "PUBLISHED" } }),
 
-    // News
     prisma.news.count(),
     prisma.news.count({ where: { status: "DRAFT" } }),
     prisma.news.count({ where: { status: "PUBLISHED" } }),
 
-    // Education
     prisma.education.count(),
     prisma.education.count({ where: { status: "DRAFT" } }),
     prisma.education.count({ where: { status: "PUBLISHED" } }),
 
-    // FAQ
     prisma.faq.count(),
     prisma.faq.count({ where: { status: "DRAFT" } }),
     prisma.faq.count({ where: { status: "PUBLISHED" } }),
 
-    // Review queues: top 8 recently updated drafts/scheduled
+    prisma.branchCMS.count(),
+    prisma.branchCMS.count({ where: { status: "DRAFT" } }),
+    prisma.branchCMS.count({ where: { status: "PUBLISHED" } }),
+
+    prisma.formFile.count(),
+    prisma.formFile.count({ where: { status: "DRAFT" } }),
+    prisma.formFile.count({ where: { status: "PUBLISHED" } }),
+
+    // Services counts  ⬅️ NEW
+    prisma.service.count(),
+    prisma.service.count({ where: { status: "DRAFT" } }),
+    prisma.service.count({ where: { status: "PUBLISHED" } }),
+
+    // ----- review queues -----
     prisma.article.findMany({
       where: { status: { in: ["DRAFT", "SCHEDULED"] } },
       orderBy: { updatedAt: "desc" },
@@ -101,8 +122,31 @@ export async function GET(req: Request) {
       take: 8,
       select: { id: true, question: true, updatedAt: true },
     }),
+    prisma.branchCMS.findMany({
+      where: { status: { in: ["DRAFT", "SCHEDULED"] } },
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+      select: {
+        id: true,
+        title: true,
+        updatedAt: true,
+        branch: { select: { name: true } },
+      },
+    }),
+    prisma.formFile.findMany({
+      where: { status: { in: ["DRAFT", "SCHEDULED"] } },
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+      select: { id: true, title: true, updatedAt: true },
+    }),
+    // Services review queue  ⬅️ NEW
+    prisma.service.findMany({
+      where: { status: { in: ["DRAFT", "SCHEDULED"] } },
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+      select: { id: true, title: true, updatedAt: true },
+    }),
 
-    // Recent activity (limit)
     canViewActivity
       ? prisma.auditLog.findMany({
           where: { action: { startsWith: "CMS_" } },
@@ -119,33 +163,51 @@ export async function GET(req: Request) {
     ...reviewArticles.map((a) => ({
       id: a.id,
       title: a.title,
-      type: "article",
+      type: "article" as const,
       updatedAt: a.updatedAt.toISOString(),
     })),
     ...reviewNews.map((n) => ({
       id: n.id,
       title: n.title,
-      type: "news",
+      type: "news" as const,
       updatedAt: n.updatedAt.toISOString(),
     })),
     ...reviewEdu.map((e) => ({
       id: e.id,
       title: e.title,
-      type: "education",
+      type: "education" as const,
       updatedAt: e.updatedAt.toISOString(),
     })),
     ...reviewFaq.map((f) => ({
       id: f.id,
       title: f.question,
-      type: "faq",
+      type: "faq" as const,
       updatedAt: f.updatedAt.toISOString(),
+    })),
+    ...reviewBranches.map((b) => ({
+      id: b.id,
+      title: b.title || b.branch?.name || "Branch page",
+      type: "branch" as const,
+      updatedAt: b.updatedAt.toISOString(),
+    })),
+    ...reviewForms.map((ff) => ({
+      id: ff.id,
+      title: ff.title,
+      type: "form" as const,
+      updatedAt: ff.updatedAt.toISOString(),
+    })),
+    // Services in review queue  ⬅️ NEW
+    ...reviewServices.map((s) => ({
+      id: s.id,
+      title: s.title,
+      type: "service" as const,
+      updatedAt: s.updatedAt.toISOString(),
     })),
   ]
     .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
     .slice(0, 8);
 
   return NextResponse.json({
-    // module summaries (what your UI reads)
     articles: {
       total: articlesTotal,
       drafts: articlesDrafts,
@@ -154,8 +216,23 @@ export async function GET(req: Request) {
     news: { total: newsTotal, drafts: newsDrafts, published: newsPublished },
     education: { total: eduTotal, drafts: eduDrafts, published: eduPublished },
     faq: { total: faqTotal, drafts: faqDrafts, published: faqPublished },
+    branches: {
+      total: branchesTotal,
+      drafts: branchesDrafts,
+      published: branchesPublished,
+    },
+    forms: {
+      total: formsTotal,
+      drafts: formsDrafts,
+      published: formsPublished,
+    },
+    // Services overview  ⬅️ NEW
+    services: {
+      total: servicesTotal,
+      drafts: servicesDrafts,
+      published: servicesPublished,
+    },
 
-    // widgets
     reviewQueue,
     recentActivity: activity.map((e) => ({
       id: e.id,

@@ -18,4 +18,6 @@ export const ACTIVITY_ALLOWED_ROLES = new Set([
   "it_manager",
   "ceo",
   "internal_manager",
+  "admin",
 ]);
+
