@@ -52,10 +52,14 @@ export async function GET(req: Request) {
     formsTotal,
     formsDrafts,
     formsPublished,
-    // Services  ⬅️ NEW
+    // Services
     servicesTotal,
     servicesDrafts,
     servicesPublished,
+    // InsuranceCompanies
+    insurancesTotal,
+    insurancesDrafts,
+    insurancesPublished,
     // Review queues
     reviewArticles,
     reviewNews,
@@ -63,7 +67,8 @@ export async function GET(req: Request) {
     reviewFaq,
     reviewBranches,
     reviewForms,
-    reviewServices, // ⬅️ NEW
+    reviewServices,
+    reviewInsurances,
     // Activity
     activity,
   ] = await Promise.all([
@@ -92,10 +97,13 @@ export async function GET(req: Request) {
     prisma.formFile.count({ where: { status: "DRAFT" } }),
     prisma.formFile.count({ where: { status: "PUBLISHED" } }),
 
-    // Services counts  ⬅️ NEW
     prisma.service.count(),
     prisma.service.count({ where: { status: "DRAFT" } }),
     prisma.service.count({ where: { status: "PUBLISHED" } }),
+
+    prisma.insuranceCompany.count(),
+    prisma.insuranceCompany.count({ where: { status: "DRAFT" } }),
+    prisma.insuranceCompany.count({ where: { status: "PUBLISHED" } }),
 
     // ----- review queues -----
     prisma.article.findMany({
@@ -139,12 +147,17 @@ export async function GET(req: Request) {
       take: 8,
       select: { id: true, title: true, updatedAt: true },
     }),
-    // Services review queue  ⬅️ NEW
     prisma.service.findMany({
       where: { status: { in: ["DRAFT", "SCHEDULED"] } },
       orderBy: { updatedAt: "desc" },
       take: 8,
       select: { id: true, title: true, updatedAt: true },
+    }),
+    prisma.insuranceCompany.findMany({
+      where: { status: { in: ["DRAFT", "SCHEDULED"] } },
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+      select: { id: true, name: true, updatedAt: true },
     }),
 
     canViewActivity
@@ -196,12 +209,17 @@ export async function GET(req: Request) {
       type: "form" as const,
       updatedAt: ff.updatedAt.toISOString(),
     })),
-    // Services in review queue  ⬅️ NEW
     ...reviewServices.map((s) => ({
       id: s.id,
       title: s.title,
       type: "service" as const,
       updatedAt: s.updatedAt.toISOString(),
+    })),
+    ...reviewInsurances.map((i) => ({
+      id: i.id,
+      title: i.name,
+      type: "insurance" as const,
+      updatedAt: i.updatedAt.toISOString(),
     })),
   ]
     .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
@@ -226,11 +244,15 @@ export async function GET(req: Request) {
       drafts: formsDrafts,
       published: formsPublished,
     },
-    // Services overview  ⬅️ NEW
     services: {
       total: servicesTotal,
       drafts: servicesDrafts,
       published: servicesPublished,
+    },
+    insurance: {
+      total: insurancesTotal,
+      drafts: insurancesDrafts,
+      published: insurancesPublished,
     },
 
     reviewQueue,
