@@ -22,7 +22,7 @@ type BranchOption = {
   city?: string | null;
 };
 type DepartmentOption = { id: string; name: string; key?: string };
-type RoleOption = { id: string; name: string; key: string };
+type SpecialtyOption = { id: string; name: string }; // <-- NEW
 
 type PlacementForm = {
   branchId: string; // required to set placement; can be ""
@@ -40,6 +40,7 @@ type User = {
   isActive: boolean;
   mustChangePassword?: boolean;
   imageUrl?: string | null;
+  specialtyId?: string | null; // <-- NEW
   profile: ProfileState;
   branches?: PlacementView[]; // from API for current placements
   roles?: { role: { id: string; key: string; name: string } }[]; // if added to GET
@@ -53,6 +54,7 @@ type UpdatePayload = {
   isActive?: boolean;
   mustChangePassword?: boolean;
   password?: string;
+  specialtyId?: string | null; // <-- NEW
   profile?: Partial<{
     secondaryEmail: string | null;
     locale: string | null;
@@ -87,7 +89,7 @@ export default function EditUserForm({ userId }: { userId: string }) {
   // options
   const [allBranches, setAllBranches] = useState<BranchOption[]>([]);
   const [allDepartments, setAllDepartments] = useState<DepartmentOption[]>([]);
-
+  const [allSpecialties, setAllSpecialties] = useState<SpecialtyOption[]>([]); // <-- NEW
   type RoleOption = { id: string; key: string; name: string };
 
   const [allRoles, setAllRoles] = useState<RoleOption[]>([]);
@@ -117,6 +119,7 @@ export default function EditUserForm({ userId }: { userId: string }) {
     isActive: true,
     mustChangePassword: false,
     imageUrl: null,
+    specialtyId: null, // <-- NEW
     profile: {
       secondaryEmail: "",
       locale: "",
@@ -142,6 +145,7 @@ export default function EditUserForm({ userId }: { userId: string }) {
     password2: false,
     phone: false,
     address: false,
+    specialtyId: false, // <-- NEW
     // profile:
     secondaryEmail: false,
     locale: false,
@@ -154,6 +158,10 @@ export default function EditUserForm({ userId }: { userId: string }) {
     positionTitle: false,
   });
 
+  const isDoctorRoleSelected = useMemo(() => {
+    return selectedRoleKey === "doctor";
+  }, [selectedRoleKey]);
+
   // ---- load user + options
   useEffect(() => {
     let alive = true;
@@ -162,12 +170,12 @@ export default function EditUserForm({ userId }: { userId: string }) {
       setSuccess("");
       setLoading(true);
       try {
-        // user
-        const [userRes, brRes, depRes, roleRes] = await Promise.all([
+        const [userRes, brRes, depRes, roleRes, specRes] = await Promise.all([
           fetch(`/api/admin/users/${userId}`, { cache: "no-store" }),
           fetch(`/api/admin/branches`, { cache: "no-store" }),
           fetch(`/api/admin/departments`, { cache: "no-store" }),
           fetch(`/api/admin/roles`, { cache: "no-store" }),
+          fetch(`/api/admin/specialties`, { cache: "no-store" }), // <-- NEW
         ]);
 
         if (!userRes.ok) throw new Error("خطا در دریافت اطلاعات کاربر");
@@ -176,10 +184,12 @@ export default function EditUserForm({ userId }: { userId: string }) {
         const branches: BranchOption[] = brRes.ok ? await brRes.json() : [];
         const depts: DepartmentOption[] = depRes.ok ? await depRes.json() : [];
         const roles: RoleOption[] = roleRes.ok ? await roleRes.json() : [];
+        const specialties: SpecialtyOption[] = specRes.ok
+          ? await specRes.json()
+          : []; // <-- NEW
 
         if (!alive) return;
 
-        // Find primary placement (or first if none flagged)
         const primary =
           (u.branches || []).find((x: PlacementView) => x.isPrimary) ||
           (u.branches || [])[0] ||
@@ -194,6 +204,7 @@ export default function EditUserForm({ userId }: { userId: string }) {
           isActive: Boolean(u.isActive),
           mustChangePassword: Boolean(u.mustChangePassword),
           imageUrl: u.image ?? null,
+          specialtyId: u.specialtyId ?? null, // <-- NEW
           profile: {
             secondaryEmail: u.profile?.secondaryEmail ?? "",
             locale: u.profile?.locale ?? "",
@@ -203,9 +214,9 @@ export default function EditUserForm({ userId }: { userId: string }) {
             emergencyPhone: u.profile?.emergencyPhone ?? "",
           },
           branches: u.branches ?? [],
-          roles: u.roles ?? [], // requires server GET to include roles
+          roles: u.roles ?? [],
         };
-        const currentRoleKey = u.roles?.[0]?.role?.key ?? null; // single role UX
+        const currentRoleKey = u.roles?.[0]?.role?.key ?? null;
         setSelectedRoleKey(currentRoleKey);
         setOriginalRoleKey(currentRoleKey);
 
@@ -216,19 +227,15 @@ export default function EditUserForm({ userId }: { userId: string }) {
           branchId: primary?.branch?.id ?? "",
           departmentId: primary?.department?.id ?? null,
           isPrimary: true,
-          positionTitle: "", // we didn't select this in GET; optional
+          positionTitle: "",
         };
         setPlacement(pNow);
         setOriginalPlacement(pNow);
 
-        // Role preselect (single-role model)
-        const userRoleKey = u.roles?.[0]?.role?.key ?? null; // if you added roles to the GET as suggested
-        setSelectedRoleKey(userRoleKey);
-        setOriginalRoleKey(userRoleKey);
-
         setAllBranches(branches);
         setAllDepartments(depts);
         setAllRoles(roles);
+        setAllSpecialties(specialties); // <-- NEW
       } catch (e) {
         if (!alive) return;
         setError(e instanceof Error ? e.message : "بازیابی اطلاعات ناموفق بود");
@@ -314,6 +321,10 @@ export default function EditUserForm({ userId }: { userId: string }) {
     password && password2 && password !== password
       ? { isValid: false, error: "رمز عبور و تکرار آن یکسان نیست." }
       : { isValid: true, error: null };
+  const specialtyError =
+    isDoctorRoleSelected && !form.specialtyId
+      ? "انتخاب تخصص الزامی است."
+      : null;
 
   const se = form.profile.secondaryEmail.trim();
   const secondaryEmailError =
@@ -354,6 +365,7 @@ export default function EditUserForm({ userId }: { userId: string }) {
   const showEmailError = touched.email ? emailCheck.error : null;
   const showPasswordError = touched.password ? passwordCheck.error : null;
   const showPassword2Error = touched.password2 ? password2Check.error : null;
+  const showSpecialtyError = touched.specialtyId ? specialtyError : null;
   const showSecondaryEmailError = touched.secondaryEmail
     ? secondaryEmailError
     : null;
@@ -381,90 +393,46 @@ export default function EditUserForm({ userId }: { userId: string }) {
     if (!original) return {};
     const p: UpdatePayload = {};
 
-    // name
-    if (form.fullName !== original.fullName) {
-      const n = form.fullName.trim();
-      p.name = n.length ? n : null;
-    }
-    // email
-    if (form.email !== original.email) {
+    if (form.fullName.trim() !== original.fullName)
+      p.name = form.fullName.trim();
+    if (form.email.trim().toLowerCase() !== original.email)
       p.email = form.email.trim().toLowerCase();
-    }
-    // phone
-    const newPhone = form.phone?.trim() || null;
-    const oldPhone = original.phone ?? null;
-    if (newPhone !== oldPhone) p.phone = newPhone;
-
-    // address
-    const newAddr = form.address?.trim() || null;
-    const oldAddr = original.address ?? null;
-    if (newAddr !== oldAddr) p.address = newAddr;
-
-    // active
+    if ((form.phone ?? "") !== (original.phone ?? ""))
+      p.phone = form.phone || null;
+    if ((form.address ?? "") !== (original.address ?? ""))
+      p.address = form.address || null;
     if (form.isActive !== original.isActive) p.isActive = form.isActive;
-
-    // must change pwd
-    if (
-      (form.mustChangePassword ?? false) !==
-      (original.mustChangePassword ?? false)
-    ) {
-      p.mustChangePassword = Boolean(form.mustChangePassword);
-    }
-
-    // password
+    if (form.mustChangePassword !== original.mustChangePassword)
+      p.mustChangePassword = form.mustChangePassword;
     if (password) p.password = password;
+    if (form.specialtyId !== original.specialtyId)
+      p.specialtyId = form.specialtyId || null;
 
-    // profile diffs
-    const prof: UpdatePayload["profile"] = {};
-    const o = original.profile;
+    const profChanges: Partial<ProfileState> = {};
+    if (form.profile.secondaryEmail !== original.profile.secondaryEmail)
+      profChanges.secondaryEmail = form.profile.secondaryEmail;
+    if (form.profile.locale !== original.profile.locale)
+      profChanges.locale = form.profile.locale;
+    if (form.profile.timezone !== original.profile.timezone)
+      profChanges.timezone = form.profile.timezone;
+    if (form.profile.notifyByEmail !== original.profile.notifyByEmail)
+      profChanges.notifyByEmail = form.profile.notifyByEmail;
+    if (form.profile.emergencyName !== original.profile.emergencyName)
+      profChanges.emergencyName = form.profile.emergencyName;
+    if (form.profile.emergencyPhone !== original.profile.emergencyPhone)
+      profChanges.emergencyPhone = form.profile.emergencyPhone;
+    if (Object.keys(profChanges).length > 0) p.profile = profChanges;
 
-    const se = form.profile.secondaryEmail.trim() || null;
-    if (se !== (o.secondaryEmail || null)) prof.secondaryEmail = se;
+    if (selectedRoleKey !== originalRoleKey) p.role = selectedRoleKey;
 
-    const lo = form.profile.locale.trim() || null;
-    if (lo !== (o.locale || null)) prof.locale = lo;
-
-    const tz = form.profile.timezone.trim() || null;
-    if (tz !== (o.timezone || null)) prof.timezone = tz;
-
-    if (form.profile.notifyByEmail !== o.notifyByEmail)
-      prof.notifyByEmail = form.profile.notifyByEmail;
-
-    const en = form.profile.emergencyName.trim() || null;
-    if (en !== (o.emergencyName || null)) prof.emergencyName = en;
-
-    const ep = form.profile.emergencyPhone.trim() || null;
-    if (ep !== (o.emergencyPhone || null)) prof.emergencyPhone = ep;
-
-    if (Object.keys(prof).length) p.profile = prof;
-
-    // role diff (single role key)
-    if (selectedRoleKey !== originalRoleKey && selectedRoleKey) {
-      p.role = selectedRoleKey;
-    }
-
-    // placement diff (treat empty branchId as "no change")
-    const op = originalPlacement;
-    const pos = (placement.positionTitle || "").trim();
-    const opos = (op.positionTitle || "").trim();
-    const placementChanged =
-      placement.branchId !== op.branchId ||
-      (placement.departmentId || null) !== (op.departmentId || null) ||
-      placement.isPrimary !== op.isPrimary ||
-      pos !== opos;
-
-    if (placement.branchId && placementChanged) {
+    if (
+      placement.branchId !== originalPlacement.branchId ||
+      placement.departmentId !== originalPlacement.departmentId
+    ) {
       p.placement = {
         branchId: placement.branchId,
-        departmentId: placement.departmentId ?? null,
-        isPrimary: placement.isPrimary,
-        positionTitle: pos || null,
+        departmentId: placement.departmentId,
       };
-    }
-
-    if (selectedRoleKey !== originalRoleKey) {
-      // send key when changed; if you want to allow clearing the role, send null
-      p.role = selectedRoleKey ?? null;
     }
 
     return p;
@@ -493,27 +461,9 @@ export default function EditUserForm({ userId }: { userId: string }) {
     setSuccess("");
 
     if (hasBlockingErrors) {
-      setTouched((t) => ({
-        ...t,
-        fullName: true,
-        email: true,
-        password: true,
-        password2: true,
-        phone: true,
-        address: true,
-        secondaryEmail: true,
-        locale: true,
-        timezone: true,
-        emergencyName: true,
-        emergencyPhone: true,
-        branch: true,
-        department: true,
-        positionTitle: true,
-      }));
       setError("لطفاً خطاهای فرم را برطرف کنید.");
       return;
     }
-
     if (nothingChanged) {
       setSuccess("تغییری برای ذخیره وجود ندارد.");
       return;
@@ -533,42 +483,10 @@ export default function EditUserForm({ userId }: { userId: string }) {
       setSuccess("اطلاعات کاربر با موفقیت به‌روزرسانی شد.");
       setPassword("");
       setPassword2("");
-
-      // refresh snapshots
-      setOriginal((prev) => {
-        const next = prev ? { ...prev } : form;
-        if ("name" in changedPayload)
-          next.fullName = (changedPayload.name as string) ?? "";
-        if ("email" in changedPayload)
-          next.email = changedPayload.email as string;
-        if ("phone" in changedPayload)
-          next.phone = (changedPayload.phone as string | null) ?? null;
-        if ("address" in changedPayload)
-          next.address = (changedPayload.address as string | null) ?? null;
-        if ("isActive" in changedPayload)
-          next.isActive = changedPayload.isActive as boolean;
-        if ("mustChangePassword" in changedPayload)
-          next.mustChangePassword =
-            changedPayload.mustChangePassword as boolean;
-        return next;
-      });
-
-      if (changedPayload.role) {
-        setOriginalRoleKey(changedPayload.role);
-      }
-      if (changedPayload.placement) {
-        setOriginalPlacement({
-          branchId: changedPayload.placement.branchId,
-          departmentId:
-            changedPayload.placement.departmentId ??
-            originalPlacement.departmentId,
-          isPrimary:
-            typeof changedPayload.placement.isPrimary === "boolean"
-              ? changedPayload.placement.isPrimary
-              : originalPlacement.isPrimary,
-          positionTitle: changedPayload.placement.positionTitle ?? "",
-        });
-      }
+      setOriginal(form);
+      setOriginalRoleKey(selectedRoleKey);
+      setOriginalPlacement(placement);
+      router.push("/admin/staff-management");
     } catch (e) {
       setError(e instanceof Error ? e.message : "خطای غیرمنتظره رخ داد");
     } finally {
@@ -903,64 +821,49 @@ export default function EditUserForm({ userId }: { userId: string }) {
           <div className="text-lg font-semibold text-cms-primary mb-4">
             نقش کاربری (دسترسی‌ها)
           </div>
-          {allRoles.length === 0 ? (
-            <p className="text-sm text-gray-500">نقشی یافت نشد.</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {allRoles.map((r) => {
-                const checked = selectedRoleKey === r.key;
-                return (
-                  <label
-                    key={r.id}
-                    className={`flex items-center justify-between gap-2 border rounded-lg px-3 py-2 cursor-pointer transition ${
-                      checked
-                        ? "bg-navbar-secondary text-white border-navbar-secondary"
-                        : "hover:bg-cms-secondary hover:text-white"
-                    }`}
-                  >
-                    <span>{r.name}</span>
-                    <input
-                      type="radio"
-                      name="role"
-                      checked={checked}
-                      onChange={() => setSelectedRoleKey(r.key)}
-                    />
-                  </label>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Flags */}
-          <div className="mt-6 flex items-center mr-2 gap-6">
-            <label className="inline-flex items-center gap-2">
-              <input
-                id="isActive"
-                type="checkbox"
-                checked={form.isActive}
-                onChange={(e) => setField("isActive", e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300"
-              />
-              <span className="text-sm text-gray-800">کاربر فعال است</span>
-            </label>
-
-            <label className="inline-flex items-center gap-2">
-              <input
-                id="mustChangePassword"
-                type="checkbox"
-                checked={Boolean(form.mustChangePassword)}
-                onChange={(e) =>
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  setField("mustChangePassword", e.target.checked as any)
-                }
-                className="h-4 w-4 rounded border-gray-300"
-              />
-              <span className="text-sm text-gray-800">
-                الزام به تغییر رمز در ورود بعدی
-              </span>
-            </label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {allRoles.map((r) => (
+              <label
+                key={r.id}
+                className={`flex items-center justify-between gap-2 border rounded-lg px-3 py-2 cursor-pointer transition ${
+                  selectedRoleKey === r.key
+                    ? "bg-navbar-secondary text-white border-navbar-secondary"
+                    : "hover:bg-cms-secondary hover:text-white"
+                }`}
+              >
+                <span>{r.name}</span>
+                <input
+                  type="radio"
+                  name="role"
+                  checked={selectedRoleKey === r.key}
+                  onChange={() => {
+                    setSelectedRoleKey(r.key);
+                    if (r.key !== "doctor") {
+                      setField("specialtyId", null);
+                    }
+                  }}
+                />
+              </label>
+            ))}
           </div>
         </div>
+
+        {isDoctorRoleSelected && (
+          <div className="rounded-2xl bg-white p-5 mb-10 shadow-sm shadow-emerald-800 border-r-7 border-r-navbar-secondary mt-6">
+            <div className="text-lg font-semibold text-cms-primary mb-4">
+              تخصص پزشک
+            </div>
+            <SelectField
+              label="تخصص"
+              value={form.specialtyId ?? ""}
+              onChange={(v) => setField("specialtyId", v)}
+              onBlur={() => setTouched((t) => ({ ...t, specialtyId: true }))}
+              options={[{ id: "", name: "— انتخاب تخصص —" }, ...allSpecialties]}
+              error={showSpecialtyError ?? undefined}
+              required
+            />
+          </div>
+        )}
 
         {/* Password change (optional) */}
         <div className="rounded-2xl bg-white p-4 md:p-6 shadow-sm shadow-emerald-800 border-r-7 border-r-navbar-secondary">
@@ -1084,6 +987,49 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         {...inputProps}
       />
+      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  onBlur,
+  options,
+  error,
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  onBlur?: () => void;
+  options: { id: string; name: string }[];
+  error?: string;
+  required?: boolean;
+}) {
+  return (
+    <div className="group">
+      <label className="block text-sm font-medium text-gray-700 mb-1 pr-2">
+        {label} {required ? <span className="text-red-500">*</span> : null}
+      </label>
+      <select
+        className={`w-full rounded-xl border bg-white px-3 py-2 outline-none transition focus:ring-2 ${
+          error
+            ? "border-red-500 focus:ring-red-300"
+            : "border-gray-300 focus:ring-navbar-secondary"
+        }`}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+      >
+        {options.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.name}
+          </option>
+        ))}
+      </select>
       {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
   );

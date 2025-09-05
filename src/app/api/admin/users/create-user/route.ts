@@ -25,25 +25,20 @@ async function assertAdmin(req: Request) {
   return can ? session.user.id : null;
 }
 
-// 1) Accept `fullname` too, then *transform* into a normalized `name`
 const RawBodySchema = z.object({
   fullname: z.string().trim().optional(),
   firstName: z.string().trim().optional(),
   lastName: z.string().trim().optional(),
   name: z.string().trim().optional(),
-
   email: z.string().email(),
   password: z.string().min(8),
-
   phone: z.string().trim().max(50).nullable().optional(),
   address: z.string().trim().max(200).nullable().optional(),
   image: z.string().url().optional(),
   roles: z.array(z.string()).min(1, "حداقل یک نقش را انتخاب کنید."),
-
+  specialtyId: z.string().uuid().nullable().optional(), // <-- NEW
   isActive: z.boolean().optional().default(true),
   mustChangePassword: z.boolean().optional().default(false),
-
-  // profile fields as a nested object
   profile: z
     .object({
       secondaryEmail: z.string().email().nullable().optional(),
@@ -54,8 +49,6 @@ const RawBodySchema = z.object({
       emergencyPhone: z.string().max(32).nullable().optional(),
     })
     .optional(),
-
-  // initial placement (department optional; global departments)
   placement: z
     .object({
       branchId: z.string(),
@@ -66,7 +59,6 @@ const RawBodySchema = z.object({
     .optional(),
 });
 
-// Build a final `name` field from the provided variants
 const BodySchema = RawBodySchema.transform((v) => {
   const combined =
     v.name?.trim() ||
@@ -80,7 +72,6 @@ const BodySchema = RawBodySchema.transform((v) => {
   path: ["name"],
 });
 
-// Helper: trim string; empty -> null; null stays null; anything else -> undefined (no change)
 const trimOrNull = (v?: string | null): string | null | undefined => {
   if (v === null) return null;
   if (typeof v !== "string") return undefined;
@@ -89,7 +80,6 @@ const trimOrNull = (v?: string | null): string | null | undefined => {
 };
 
 export async function POST(req: Request) {
-  // 🔐 admin gate
   if (!(await assertAdmin(req))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -103,60 +93,61 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    const body = parsed.data;
+    const {
+      name: rawName,
+      email: rawEmail,
+      specialtyId,
+      ...body
+    } = parsed.data;
+    const name = rawName!;
+    const email = rawEmail.trim().toLowerCase();
 
-    const email = body.email.trim().toLowerCase();
-    const name = body.name!; // normalized above
+    const [rolesInDb, branch, department, specialty] = await Promise.all([
+      prisma.role.findMany({
+        where: { id: { in: body.roles } },
+        select: { id: true, key: true },
+      }),
+      body.placement?.branchId
+        ? prisma.branch.findUnique({ where: { id: body.placement.branchId } })
+        : Promise.resolve(null),
+      body.placement?.departmentId
+        ? prisma.department.findUnique({
+            where: { id: body.placement.departmentId },
+          })
+        : Promise.resolve(null),
+      specialtyId
+        ? prisma.specialty.findUnique({ where: { id: specialtyId } })
+        : Promise.resolve(null),
+    ]);
 
-    // validate roles exist
-    const rolesInDb = await prisma.role.findMany({
-      where: { id: { in: body.roles } },
-      select: { id: true },
-    });
-    const valid = new Set(rolesInDb.map((r) => r.id));
-    const invalid = body.roles.filter((id) => !valid.has(id));
-    if (invalid.length) {
+    const validRoleIds = new Set(rolesInDb.map((r) => r.id));
+    if (body.roles.some((id) => !validRoleIds.has(id))) {
+      return NextResponse.json({ error: "invalid_roles" }, { status: 400 });
+    }
+    if (body.placement?.branchId && !branch) {
+      return NextResponse.json({ error: "invalid_branch" }, { status: 400 });
+    }
+    if (body.placement?.departmentId && !department) {
       return NextResponse.json(
-        { error: "invalid_roles", invalid },
+        { error: "invalid_department" },
+        { status: 400 }
+      );
+    }
+    const isDoctor = rolesInDb.some((r) => r.key === "doctor");
+    if (isDoctor && !specialty) {
+      return NextResponse.json(
+        { error: "invalid_specialty_for_doctor" },
         { status: 400 }
       );
     }
 
-    // validate branch/department exist if placement provided
-    if (body.placement?.branchId) {
-      const { branchId, departmentId } = body.placement;
-      const [b, d] = await Promise.all([
-        prisma.branch.findUnique({
-          where: { id: branchId },
-          select: { id: true },
-        }),
-        departmentId
-          ? prisma.department.findUnique({
-              where: { id: departmentId },
-              select: { id: true },
-            })
-          : Promise.resolve(null),
-      ]);
-      if (!b)
-        return NextResponse.json({ error: "invalid_branch" }, { status: 400 });
-      if (departmentId && !d)
-        return NextResponse.json(
-          { error: "invalid_department" },
-          { status: 400 }
-        );
-    }
-
-    // ensure email unique
-    const exists = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    });
+    const exists = await prisma.user.findUnique({ where: { email } });
     if (exists) {
       return NextResponse.json({ error: "email_exists" }, { status: 409 });
     }
 
     const now = new Date();
-    const hash = await bcrypt.hash(body.password, 12); // keep this consistent across your app
+    const hash = await bcrypt.hash(body.password, 12);
     const userId = randomUUID();
 
     const created = await prisma.$transaction(async (tx) => {
@@ -165,12 +156,11 @@ export async function POST(req: Request) {
           id: userId,
           name,
           email,
-          emailVerified: false,
-          image: body.image,
           phone: body.phone ?? null,
           address: body.address ?? null,
           isActive: body.isActive,
           mustChangePassword: body.mustChangePassword,
+          specialtyId: isDoctor ? specialtyId : null,
           createdAt: now,
           updatedAt: now,
         },
@@ -181,21 +171,19 @@ export async function POST(req: Request) {
           id: randomUUID(),
           userId,
           providerId: "credential",
-          accountId: email, // already lowercased
+          accountId: email,
           password: hash,
           createdAt: now,
           updatedAt: now,
         },
       });
 
-      if (valid.size) {
+      if (validRoleIds.size) {
         await tx.userRole.createMany({
-          data: Array.from(valid).map((roleId) => ({ userId, roleId })),
-          skipDuplicates: true,
+          data: Array.from(validRoleIds).map((roleId) => ({ userId, roleId })),
         });
       }
 
-      // create the profile row with defaults (so self-service page always has it)
       await tx.profile.upsert({
         where: { userId },
         create: {
@@ -207,20 +195,9 @@ export async function POST(req: Request) {
           emergencyName: trimOrNull(body.profile?.emergencyName),
           emergencyPhone: trimOrNull(body.profile?.emergencyPhone),
         },
-        update: {
-          // this branch shouldn't normally run on create, but keep idempotent
-          secondaryEmail: trimOrNull(body.profile?.secondaryEmail),
-          locale: trimOrNull(body.profile?.locale),
-          timezone: trimOrNull(body.profile?.timezone),
-          ...(body.profile?.notifyByEmail !== undefined
-            ? { notifyByEmail: body.profile.notifyByEmail }
-            : {}),
-          emergencyName: trimOrNull(body.profile?.emergencyName),
-          emergencyPhone: trimOrNull(body.profile?.emergencyPhone),
-        },
+        update: {},
       });
 
-      // initial primary placement (department is global; optional)
       if (body.placement?.branchId) {
         await tx.userBranch.create({
           data: {
@@ -238,67 +215,14 @@ export async function POST(req: Request) {
 
       return tx.user.findUnique({
         where: { id: userId },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-          address: true,
-          image: true,
-          isActive: true,
-          mustChangePassword: true,
-          createdAt: true,
-          updatedAt: true,
-          roles: {
-            select: { role: { select: { id: true, key: true, name: true } } },
-            orderBy: { roleId: "asc" },
-          },
-          profile: {
-            select: {
-              secondaryEmail: true,
-              locale: true,
-              timezone: true,
-              notifyByEmail: true,
-              emergencyName: true,
-              emergencyPhone: true,
-              avatarThumbUrl: true,
-            },
-          },
-          branches: {
-            select: {
-              isPrimary: true,
-              branch: {
-                select: { id: true, key: true, name: true, city: true },
-              },
-              department: { select: { id: true, key: true, name: true } },
-            },
-            orderBy: { assignedAt: "desc" },
-          },
-        },
+        select: { id: true },
       });
     });
 
-    return NextResponse.json(
-      {
-        ok: true,
-        id: created?.id, // expose id for avatar upload
-        user: { ...created, roleList: created?.roles.map((r) => r.role) },
-      },
-      { status: 201 }
-    );
-  } catch (err: unknown) {
-    if (err && typeof err === "object" && "code" in err) {
-      const code = (err as { code?: string }).code;
-      if (code === "P2002") {
-        return NextResponse.json(
-          { error: "unique_constraint_violation" },
-          { status: 409 }
-        );
-      }
-    }
-    if (process.env.NODE_ENV !== "production") {
-      console.error("create-user error:", err);
-    }
+    return NextResponse.json({ ok: true, id: created?.id }, { status: 201 });
+  } catch (err) {
+    console.error("create-user error:", err);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }
+

@@ -60,6 +60,11 @@ export async function GET(req: Request) {
     insurancesTotal,
     insurancesDrafts,
     insurancesPublished,
+
+    // --- NEW: Schedules ---
+    schedulesTotal, // Total branches with a schedule
+    scheduleEntriesTotal, // Total individual time slots
+
     // Review queues
     reviewArticles,
     reviewNews,
@@ -104,6 +109,10 @@ export async function GET(req: Request) {
     prisma.insuranceCompany.count(),
     prisma.insuranceCompany.count({ where: { status: "DRAFT" } }),
     prisma.insuranceCompany.count({ where: { status: "PUBLISHED" } }),
+
+    // --- NEW: Schedule Counts ---
+    prisma.schedule.count(),
+    prisma.scheduleEntry.count(),
 
     // ----- review queues -----
     prisma.article.findMany({
@@ -253,6 +262,11 @@ export async function GET(req: Request) {
       total: insurancesTotal,
       drafts: insurancesDrafts,
       published: insurancesPublished,
+    },
+    // --- NEW: Schedule Stats ---
+    schedules: {
+      total: schedulesTotal, // "Total" on the card will show this
+      published: scheduleEntriesTotal, // We can use 'published' to show total entries
     },
 
     reviewQueue,

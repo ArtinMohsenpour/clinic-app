@@ -142,7 +142,7 @@ const MODULES: Array<{
     key: "schedules",
     title: "برنامه حضور پزشکان",
     description: "نمایش فقط‌خواندنی.",
-    hrefManage: "/admin/cms/schedules",
+    hrefManage: "/admin/cms/doctors-schedule",
     icon: CalendarClock,
     group: "Clinic Data",
   },
@@ -362,7 +362,6 @@ function ModuleCard({
 }: {
   title: string;
   description: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   manageHref: string;
   newHref?: string;

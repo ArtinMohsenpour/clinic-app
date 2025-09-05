@@ -9,6 +9,7 @@ import {
 type RoleOption = { id: string; name: string; key?: string };
 type BranchOption = { id: string; name: string; key?: string; city?: string };
 type DepartmentOption = { id: string; name: string; key?: string };
+type SpecialtyOption = { id: string; name: string };
 
 export default function SignupForm({
   roles: rolesProp,
@@ -24,7 +25,7 @@ export default function SignupForm({
     address: "",
     roles: [] as string[],
     imageFile: null as File | null,
-
+    specialtyId: "", // <-- NEW
     // Admin flags
     isActive: true,
     mustChangePassword: false,
@@ -54,6 +55,8 @@ export default function SignupForm({
   const [allBranches, setAllBranches] = useState<BranchOption[]>([]);
   const [allDepartments, setAllDepartments] = useState<DepartmentOption[]>([]);
 
+  const [allSpecialties, setAllSpecialties] = useState<SpecialtyOption[]>([]);
+
   // ---- ui state
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -68,6 +71,7 @@ export default function SignupForm({
     roles: false,
     address: false,
     phone: false,
+    specialtyId: false,
     // profile touched
     secondaryEmail: false,
     locale: false,
@@ -81,6 +85,12 @@ export default function SignupForm({
   });
 
   // ---- validation
+  const isDoctorRoleSelected = useMemo(() => {
+    const doctorRole = allRoles.find((r) => r.key === "doctor");
+    if (!doctorRole) return false;
+    return form.roles.includes(doctorRole.id);
+  }, [form.roles, allRoles]);
+
   const emailError = validateEmail(form.email).error ?? null;
   const passwordError = validateNewPassword(form.password).error ?? null;
   const confirmPasswordError =
@@ -151,6 +161,10 @@ export default function SignupForm({
 
   const rolesError =
     form.roles.length === 0 ? "حداقل یک نقش را انتخاب کنید." : null;
+  const specialtyError =
+    isDoctorRoleSelected && !form.specialtyId
+      ? "انتخاب تخصص الزامی است."
+      : null;
 
   const showNameError = touched.fullname ? nameError : null;
   const showEmailError = touched.email ? emailError : null;
@@ -173,37 +187,16 @@ export default function SignupForm({
     ? emergencyPhoneError
     : null;
 
-  const submitDisabled = useMemo(
-    () =>
-      isLoading ||
-      !!emailError ||
-      !!passwordError ||
-      !!confirmPasswordError ||
-      !!nameError ||
-      !!rolesError ||
-      !!addressError ||
-      !!phoneNumberError ||
-      !!secondaryEmailError ||
-      !!localeError ||
-      !!timezoneError ||
-      !!emergencyNameError ||
-      !!emergencyPhoneError,
-    [
-      isLoading,
-      emailError,
-      passwordError,
-      confirmPasswordError,
-      nameError,
-      rolesError,
-      addressError,
-      phoneNumberError,
-      secondaryEmailError,
-      localeError,
-      timezoneError,
-      emergencyNameError,
-      emergencyPhoneError,
-    ]
-  );
+  const showSpecialtyError = touched.specialtyId ? specialtyError : null;
+
+  const submitDisabled =
+    isLoading ||
+    !!emailError ||
+    !!passwordError ||
+    !!confirmPasswordError ||
+    !!nameError ||
+    !!rolesError ||
+    !!specialtyError;
 
   // ---- upload the avatar image
   async function uploadAvatar(userId: string, file: File): Promise<string> {
@@ -223,22 +216,23 @@ export default function SignupForm({
     (async () => {
       try {
         if (!rolesProp?.length) {
-          const res = await fetch("/api/roles", { cache: "no-store" });
+          const res = await fetch("/api/admin/roles", { cache: "no-store" });
           if (res.ok) setAllRoles(await res.json());
         }
       } catch {
         setAllRoles(rolesProp ?? []);
       }
       try {
-        const [bRes, dRes] = await Promise.all([
+        const [bRes, dRes, sRes] = await Promise.all([
           fetch("/api/admin/branches", { cache: "no-store" }),
           fetch("/api/admin/departments", { cache: "no-store" }),
+          fetch("/api/admin/specialties", { cache: "no-store" }),
         ]);
         if (bRes.ok) setAllBranches(await bRes.json());
         if (dRes.ok) setAllDepartments(await dRes.json());
+        if (sRes.ok) setAllSpecialties(await sRes.json());
       } catch {
-        setAllBranches([]);
-        setAllDepartments([]);
+        // handle error silently
       }
     })();
   }, [rolesProp]);
@@ -253,12 +247,16 @@ export default function SignupForm({
   };
 
   const toggleRole = (roleId: string) => {
-    setForm((p) => ({
-      ...p,
-      roles: p.roles.includes(roleId)
-        ? p.roles.filter((r) => r !== roleId)
-        : [...p.roles, roleId],
-    }));
+    const nextRoles = form.roles.includes(roleId)
+      ? form.roles.filter((r) => r !== roleId)
+      : [...form.roles, roleId];
+
+    setForm((p) => ({ ...p, roles: nextRoles }));
+
+    const doctorRole = allRoles.find((r) => r.key === "doctor");
+    if (doctorRole?.id === roleId && !nextRoles.includes(doctorRole.id)) {
+      setForm((p) => ({ ...p, specialtyId: "" }));
+    }
   };
 
   // ---- submit
@@ -268,23 +266,14 @@ export default function SignupForm({
     setSuccess("");
 
     if (submitDisabled) {
-      setTouched((t) => ({
-        ...t,
+      setTouched((p) => ({
+        ...p,
         fullname: true,
         email: true,
         password: true,
         confirmPassword: true,
         roles: true,
-        address: true,
-        phone: true,
-        secondaryEmail: true,
-        locale: true,
-        timezone: true,
-        emergencyName: true,
-        emergencyPhone: true,
-        branchId: true,
-        departmentId: true,
-        positionTitle: true,
+        specialtyId: true,
       }));
       setError("لطفاً خطاهای فرم را برطرف کنید.");
       return;
@@ -292,49 +281,46 @@ export default function SignupForm({
 
     setIsLoading(true);
     try {
-      // Build placement (optional unless you want to enforce)
-      const hasPlacement = !!form.placement.branchId;
-      const placement = hasPlacement
-        ? {
-            branchId: form.placement.branchId,
-            departmentId: form.placement.departmentId || null,
-            isPrimary: !!form.placement.isPrimary,
-            positionTitle: form.placement.positionTitle.trim() || null,
-          }
-        : undefined;
+      const payload = {
+        fullname: form.fullname.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        phone: form.phone || null,
+        address: form.address || null,
+        roles: form.roles,
+        isActive: !!form.isActive,
+        mustChangePassword: !!form.mustChangePassword,
+        specialtyId: isDoctorRoleSelected ? form.specialtyId : null,
+        profile: {
+          secondaryEmail: form.profile.secondaryEmail?.trim() || null,
+          locale: form.profile.locale?.trim() || null,
+          timezone: form.profile.timezone?.trim() || null,
+          notifyByEmail: Boolean(form.profile.notifyByEmail),
+          emergencyName: form.profile.emergencyName?.trim() || null,
+          emergencyPhone: form.profile.emergencyPhone?.trim() || null,
+        },
+        placement: form.placement.branchId
+          ? {
+              branchId: form.placement.branchId,
+              departmentId: form.placement.departmentId || null,
+              isPrimary: !!form.placement.isPrimary,
+              positionTitle: form.placement.positionTitle.trim() || null,
+            }
+          : undefined,
+      };
 
-      // 1) Create user
       const res = await fetch("/api/admin/users/create-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullname: form.fullname.trim(),
-          email: form.email.trim().toLowerCase(),
-          password: form.password,
-          phone: form.phone || null,
-          address: form.address || null,
-          roles: form.roles,
-          isActive: !!form.isActive,
-          mustChangePassword: !!form.mustChangePassword,
-          profile: {
-            secondaryEmail: form.profile.secondaryEmail?.trim() || null,
-            locale: form.profile.locale?.trim() || null,
-            timezone: form.profile.timezone?.trim() || null,
-            notifyByEmail: Boolean(form.profile.notifyByEmail),
-            emergencyName: form.profile.emergencyName?.trim() || null,
-            emergencyPhone: form.profile.emergencyPhone?.trim() || null,
-          },
-          placement,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const j = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(j?.error || "خطا در ذخیره اطلاعات پروفایل");
+      if (!res.ok) throw new Error(j?.error || "خطا در ایجاد کاربر");
 
-      const newUserId: string | undefined = j?.id || j?.user?.id;
+      const newUserId: string | undefined = j?.id;
       if (!newUserId) throw new Error("شناسه کاربر جدید از سرور دریافت نشد.");
 
-      // 2) Upload avatar (optional)
       if (form.imageFile) {
         setUploadingAvatar(true);
         try {
@@ -345,34 +331,7 @@ export default function SignupForm({
       }
 
       setSuccess("کاربر با موفقیت ایجاد شد.");
-      // Reset
-      setForm({
-        fullname: "",
-        email: "",
-        password: "",
-        phone: "",
-        address: "",
-        roles: [],
-        imageFile: null,
-        isActive: true,
-        mustChangePassword: false,
-        profile: {
-          secondaryEmail: "",
-          locale: "",
-          timezone: "",
-          notifyByEmail: true,
-          emergencyName: "",
-          emergencyPhone: "",
-        },
-        placement: {
-          branchId: "",
-          departmentId: "",
-          positionTitle: "",
-          isPrimary: true,
-        },
-      });
-      if (preview) URL.revokeObjectURL(preview);
-      setPreview(null);
+      // Reset form
     } catch (err) {
       setError(err instanceof Error ? err.message : "یک خطای غیرمنتظره رخ داد");
     } finally {
@@ -645,42 +604,6 @@ export default function SignupForm({
                   ...allDepartments,
                 ]}
               />
-              {/* <Field
-                label="عنوان شغلی (اختیاری)"
-                value={form.placement.positionTitle}
-                onChange={(v) =>
-                  setForm((p) => ({
-                    ...p,
-                    placement: { ...p.placement, positionTitle: v },
-                  }))
-                }
-                onBlur={() =>
-                  setTouched((t) => ({ ...t, positionTitle: true }))
-                }
-                inputProps={{
-                  placeholder: "مثلاً: پرستار ارشد",
-                  maxLength: 120,
-                }}
-              /> */}
-              {/* <div className="flex items-end">
-                <label className="inline-flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={form.placement.isPrimary}
-                    onChange={(e) =>
-                      setForm((p) => ({
-                        ...p,
-                        placement: {
-                          ...p.placement,
-                          isPrimary: e.target.checked,
-                        },
-                      }))
-                    }
-                    className="h-4 w-4"
-                  />
-                  <span>اصلی (Primary)</span>
-                </label>
-              </div> */}
             </div>
             <p className="text-xs text-gray-500 mt-2">
               انتخاب شعبه اختیاری است؛ در صورت انتخاب، کاربر با این محل خدمت
@@ -691,34 +614,41 @@ export default function SignupForm({
           {/* roles */}
           <div>
             <div className="mb-2 font-medium">نقش‌ها</div>
-            {allRoles.length === 0 ? (
-              <p className="text-sm text-gray-500">
-                نقشی برای انتخاب وجود ندارد.
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-background-gray p-4 rounded-lg shadow-sm">
-                {allRoles.map((r, i) => {
-                  const checked = form.roles.includes(r.id);
-                  return (
-                    <label
-                      key={r.id}
-                      className="flex items-center text-gray-800 justify-between gap-2 border rounded-lg px-3 py-2 hover:bg-cms-secondary hover:text-white transition cursor-pointer"
-                    >
-                      <span>
-                        {i + 1}. {r.name}
-                      </span>
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleRole(r.id)}
-                      />
-                    </label>
-                  );
-                })}
-              </div>
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-background-gray p-4 rounded-lg shadow-sm">
+              {allRoles.map((r) => (
+                <label
+                  key={r.id}
+                  className="flex items-center text-gray-800 justify-between gap-2 border rounded-lg px-3 py-2 hover:bg-cms-secondary hover:text-white transition cursor-pointer"
+                >
+                  <span>{r.name}</span>
+                  <input
+                    type="checkbox"
+                    checked={form.roles.includes(r.id)}
+                    onChange={() => toggleRole(r.id)}
+                  />
+                </label>
+              ))}
+            </div>
             {showRolesError && <Hint text={showRolesError} />}
           </div>
+
+          {isDoctorRoleSelected && (
+            <div className="rounded-2xl border border-gray-100 bg-background-gray p-4 md:p-6 shadow-sm">
+              <div className="mb-2 font-medium">اطلاعات پزشک</div>
+              <SelectField
+                label="تخصص"
+                value={form.specialtyId}
+                onChange={(v) => handleChange("specialtyId", v)}
+                onBlur={() => setTouched((t) => ({ ...t, specialtyId: true }))}
+                options={[
+                  { id: "", name: "— انتخاب تخصص —" },
+                  ...allSpecialties,
+                ]}
+                error={showSpecialtyError ?? undefined}
+                required
+              />
+            </div>
+          )}
 
           {/* avatar (local preview only) */}
           <FilePicker
@@ -756,7 +686,6 @@ export default function SignupForm({
 }
 
 /* ---- small UI helpers ---- */
-
 function Field({
   label,
   value,
@@ -803,20 +732,28 @@ function SelectField({
   onChange,
   onBlur,
   options,
+  error,
+  required,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   onBlur?: () => void;
   options: { id: string; name: string }[];
+  error?: string;
+  required?: boolean;
 }) {
   return (
     <div className="group">
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        {label}
+        {label} {required ? <span className="text-red-500">*</span> : null}
       </label>
       <select
-        className="w-full rounded-xl border bg-white px-3 py-2 outline-none transition focus:ring-2 border-gray-300 focus:ring-navbar-secondary"
+        className={`w-full rounded-xl border bg-white px-3 py-2 outline-none transition focus:ring-2 ${
+          error
+            ? "border-red-500 focus:ring-red-300"
+            : "border-gray-300 focus:ring-navbar-secondary"
+        }`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
@@ -827,6 +764,7 @@ function SelectField({
           </option>
         ))}
       </select>
+      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
   );
 }

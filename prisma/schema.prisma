@@ -40,6 +40,16 @@ enum FormAssetRole {
   IMAGE
 }
 
+enum Weekday {
+  SATURDAY
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
+
 // --------- RBAC ---------
 
 model Role {
@@ -118,7 +128,28 @@ model User {
   insuranceAuthored InsuranceCompany[] @relation("InsuranceAuthor")
   insuranceUpdated  InsuranceCompany[] @relation("InsuranceUpdatedBy")
 
+  // NEW RELATIONS FOR SCHEDULE
+  scheduleEntries    ScheduleEntry[] @relation("DoctorOnSchedule")
+  schedulesUpdatedBy Schedule[]      @relation("ScheduleUpdatedBy")
+
+  specialtyId String?
+  specialty   Specialty? @relation(fields: [specialtyId], references: [id], onDelete: SetNull)
+
   @@map("user")
+}
+
+model Specialty {
+  id   String @id @default(uuid())
+  key  String @unique // e.g., "cardiology"
+  name String @unique // e.g., "Cardiology"
+
+  // Relation: Many doctors can have this specialty
+  users User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("specialty")
 }
 
 model Session {
@@ -202,10 +233,12 @@ model Branch {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  news NewsBranch[]
-  cms  BranchCMS?
-
+  news     NewsBranch[]
+  cms      BranchCMS?
   services ServiceBranch[]
+
+  // NEW: Relation to Schedule
+  schedule Schedule?
 
   @@map("branch")
 }
@@ -926,4 +959,40 @@ model InsuranceCompany {
 
   @@index([status, publishedAt])
   @@map("insurance_company")
+}
+
+// This model represents the schedule for a single branch
+model Schedule {
+  id       String @id @default(uuid())
+  branchId String @unique // Each branch has one schedule
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  // A schedule is composed of multiple entries (e.g., Dr. Smith on Mondays)
+  entries ScheduleEntry[]
+
+  // Audit fields
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+  updatedBy   User?    @relation("ScheduleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("schedule")
+}
+
+// This model represents a single doctor's shift on a specific day
+model ScheduleEntry {
+  id         String   @id @default(uuid())
+  scheduleId String
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  doctorId String
+  doctor   User   @relation("DoctorOnSchedule", fields: [doctorId], references: [id], onDelete: Cascade)
+
+  dayOfWeek Weekday
+  startTime String // e.g., "09:00"
+  endTime   String // e.g., "17:30"
+  notes     String? // Optional text, e.g., "By appointment only"
+
+  @@index([scheduleId, dayOfWeek])
+  @@map("schedule_entry")
 }
