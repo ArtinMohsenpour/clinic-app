@@ -63,10 +63,14 @@ export async function GET(req: Request) {
     // Schedules
     schedulesTotal,
     scheduleEntriesTotal,
-    // --- NEW: Hero Slides ---
+    // Hero Slides
     heroSlidesTotal,
     heroSlidesDrafts,
     heroSlidesPublished,
+    // Static Pages
+    pagesTotal,
+    pagesDrafts,
+    pagesPublished,
 
     // Review queues
     reviewArticles,
@@ -77,7 +81,8 @@ export async function GET(req: Request) {
     reviewForms,
     reviewServices,
     reviewInsurances,
-    reviewHeroSlides, // --- NEW ---
+    reviewHeroSlides,
+    reviewPages,
     // Activity
     activity,
   ] = await Promise.all([
@@ -117,10 +122,13 @@ export async function GET(req: Request) {
     prisma.schedule.count(),
     prisma.scheduleEntry.count(),
 
-    // --- NEW: Hero Slide Counts ---
     prisma.heroSlide.count(),
     prisma.heroSlide.count({ where: { status: "DRAFT" } }),
     prisma.heroSlide.count({ where: { status: "PUBLISHED" } }),
+
+    prisma.staticPage.count(),
+    prisma.staticPage.count({ where: { status: "DRAFT" } }),
+    prisma.staticPage.count({ where: { status: "PUBLISHED" } }),
 
     // ----- review queues -----
     prisma.article.findMany({
@@ -176,8 +184,13 @@ export async function GET(req: Request) {
       take: 8,
       select: { id: true, name: true, updatedAt: true },
     }),
-    // --- NEW: Hero Slide Review ---
     prisma.heroSlide.findMany({
+      where: { status: { in: ["DRAFT", "SCHEDULED"] } },
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+      select: { id: true, title: true, updatedAt: true },
+    }),
+    prisma.staticPage.findMany({
       where: { status: { in: ["DRAFT", "SCHEDULED"] } },
       orderBy: { updatedAt: "desc" },
       take: 8,
@@ -245,12 +258,17 @@ export async function GET(req: Request) {
       type: "insurance" as const,
       updatedAt: i.updatedAt.toISOString(),
     })),
-    // --- NEW: Add Hero Slides to Queue ---
     ...reviewHeroSlides.map((s) => ({
       id: s.id,
       title: s.title,
       type: "hero" as const,
       updatedAt: s.updatedAt.toISOString(),
+    })),
+    ...reviewPages.map((p) => ({
+      id: p.id,
+      title: p.title,
+      type: "page" as const,
+      updatedAt: p.updatedAt.toISOString(),
     })),
   ]
     .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
@@ -289,11 +307,16 @@ export async function GET(req: Request) {
       total: schedulesTotal,
       published: scheduleEntriesTotal,
     },
-    // --- NEW: Hero Slide Stats ---
     hero: {
       total: heroSlidesTotal,
       drafts: heroSlidesDrafts,
       published: heroSlidesPublished,
+    },
+    "static-pages": {
+      // Corrected key to match UI and routes
+      total: pagesTotal,
+      drafts: pagesDrafts,
+      published: pagesPublished,
     },
 
     reviewQueue,
@@ -305,3 +328,4 @@ export async function GET(req: Request) {
     canViewActivity,
   });
 }
+

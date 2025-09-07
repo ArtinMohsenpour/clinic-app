@@ -33,7 +33,7 @@ type ModuleKey =
   | "schedules"
   | "branches"
   | "hero"
-  | "pages"
+  | "static-pages"
   | "navigation"
   | "seo"
   | "careers";
@@ -158,11 +158,11 @@ const MODULES: Array<{
     group: "Site",
   },
   {
-    key: "pages",
+    key: "static-pages",
     title: "صفحات ایستا",
     description: "درباره‌ما، تماس‌با‌ما و…",
-    hrefManage: "/admin/cms/pages",
-    hrefNew: "/admin/cms/pages/new",
+    hrefManage: "/admin/cms/static-pages",
+    hrefNew: "/admin/cms/static-pages/new",
     icon: LayoutDashboard,
     group: "Site",
   },

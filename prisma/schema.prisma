@@ -135,8 +135,11 @@ model User {
   specialtyId String?
   specialty   Specialty? @relation(fields: [specialtyId], references: [id], onDelete: SetNull)
 
-  heroSlidesAuthored HeroSlide[] @relation("HeroSlideAuthor")
-  heroSlidesUpdated  HeroSlide[] @relation("HeroSlideUpdatedBy")
+  heroSlidesAuthored  HeroSlide[]  @relation("HeroSlideAuthor")
+  heroSlidesUpdated   HeroSlide[]  @relation("HeroSlideUpdatedBy")
+  // ------------ ADD THESE NEW LINES TO YOUR USER MODEL ------------
+  staticPagesAuthored StaticPage[] @relation("StaticPageAuthor")
+  staticPagesUpdated  StaticPage[] @relation("StaticPageUpdatedBy")
 
   @@map("user")
 }
@@ -1037,4 +1040,60 @@ model HeroSlide {
   @@index([status, publishedAt])
   @@index([order])
   @@map("hero_slide")
+}
+
+// ---------------- NEW: StaticPage (Final Version) ----------------
+model StaticPage {
+  id    String @id @default(uuid())
+  slug  String @unique // e.g., "about-us", "contact-us"
+  title String // Page H1 and meta title
+
+  // For rich, long-form content like the "About Us" page body.
+  body Json?
+
+  // A page can have many individual contact items linked to it.
+  contactItems ContactItem[]
+
+  // Standard CMS fields
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+
+  // Authorship
+  authorId    String
+  author      User    @relation("StaticPageAuthor", fields: [authorId], references: [id])
+  updatedById String?
+  updatedBy   User?   @relation("StaticPageUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("static_page")
+}
+
+// NEW: Enum to define the different kinds of contact info
+enum ContactItemType {
+  PHONE
+  EMAIL
+  ADDRESS
+}
+
+// NEW: A model to hold a single piece of contact information
+model ContactItem {
+  id     String     @id @default(uuid())
+  pageId String
+  page   StaticPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  type  ContactItemType // e.g., PHONE, EMAIL
+  label String // e.g., "Dentistry Department"
+  value String // e.g., "+1-202-555-0125"
+  url   String? // Optional, for map links on addresses
+
+  // To allow content creators to re-order the contact info
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pageId, order])
+  @@map("contact_item")
 }
