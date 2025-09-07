@@ -60,10 +60,13 @@ export async function GET(req: Request) {
     insurancesTotal,
     insurancesDrafts,
     insurancesPublished,
-
-    // --- NEW: Schedules ---
-    schedulesTotal, // Total branches with a schedule
-    scheduleEntriesTotal, // Total individual time slots
+    // Schedules
+    schedulesTotal,
+    scheduleEntriesTotal,
+    // --- NEW: Hero Slides ---
+    heroSlidesTotal,
+    heroSlidesDrafts,
+    heroSlidesPublished,
 
     // Review queues
     reviewArticles,
@@ -74,6 +77,7 @@ export async function GET(req: Request) {
     reviewForms,
     reviewServices,
     reviewInsurances,
+    reviewHeroSlides, // --- NEW ---
     // Activity
     activity,
   ] = await Promise.all([
@@ -110,9 +114,13 @@ export async function GET(req: Request) {
     prisma.insuranceCompany.count({ where: { status: "DRAFT" } }),
     prisma.insuranceCompany.count({ where: { status: "PUBLISHED" } }),
 
-    // --- NEW: Schedule Counts ---
     prisma.schedule.count(),
     prisma.scheduleEntry.count(),
+
+    // --- NEW: Hero Slide Counts ---
+    prisma.heroSlide.count(),
+    prisma.heroSlide.count({ where: { status: "DRAFT" } }),
+    prisma.heroSlide.count({ where: { status: "PUBLISHED" } }),
 
     // ----- review queues -----
     prisma.article.findMany({
@@ -167,6 +175,13 @@ export async function GET(req: Request) {
       orderBy: { updatedAt: "desc" },
       take: 8,
       select: { id: true, name: true, updatedAt: true },
+    }),
+    // --- NEW: Hero Slide Review ---
+    prisma.heroSlide.findMany({
+      where: { status: { in: ["DRAFT", "SCHEDULED"] } },
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+      select: { id: true, title: true, updatedAt: true },
     }),
 
     canViewActivity
@@ -230,6 +245,13 @@ export async function GET(req: Request) {
       type: "insurance" as const,
       updatedAt: i.updatedAt.toISOString(),
     })),
+    // --- NEW: Add Hero Slides to Queue ---
+    ...reviewHeroSlides.map((s) => ({
+      id: s.id,
+      title: s.title,
+      type: "hero" as const,
+      updatedAt: s.updatedAt.toISOString(),
+    })),
   ]
     .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
     .slice(0, 8);
@@ -263,10 +285,15 @@ export async function GET(req: Request) {
       drafts: insurancesDrafts,
       published: insurancesPublished,
     },
-    // --- NEW: Schedule Stats ---
     schedules: {
-      total: schedulesTotal, // "Total" on the card will show this
-      published: scheduleEntriesTotal, // We can use 'published' to show total entries
+      total: schedulesTotal,
+      published: scheduleEntriesTotal,
+    },
+    // --- NEW: Hero Slide Stats ---
+    hero: {
+      total: heroSlidesTotal,
+      drafts: heroSlidesDrafts,
+      published: heroSlidesPublished,
     },
 
     reviewQueue,
