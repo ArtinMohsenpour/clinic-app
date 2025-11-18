@@ -12,25 +12,25 @@ const KEY_SET = new Set<RoleId>(ROLES.map((r) => r.id) as RoleId[]);
 const ALLOWED = ["admin", "it_manager", "ceo"] as const;
 
 export default async function Page() {
-  const raw = await headers();
-  const session = await auth.api.getSession({ headers: raw });
-  if (!session?.user) redirect("/login");
+  // const raw = await headers();
+  // const session = await auth.api.getSession({ headers: raw });
+  // if (!session?.user) redirect("/login");
 
-  const canCreate = await prisma.user.findFirst({
-    where: {
-      id: session.user.id,
-      roles: {
-        some: {
-          role: { key: { in: Array.from(ALLOWED) } }, 
-        },
-      },
-    },
-    select: { id: true },
-  });
+  // const canCreate = await prisma.user.findFirst({
+  //   where: {
+  //     id: session.user.id,
+  //     roles: {
+  //       some: {
+  //         role: { key: { in: Array.from(ALLOWED) } },
+  //       },
+  //     },
+  //   },
+  //   select: { id: true },
+  // });
 
-  if (!canCreate) {
-    redirect("/admin/staff-management?denied=create-user");
-  }
+  // if (!canCreate) {
+  //   redirect("/admin/staff-management?denied=create-user");
+  // }
 
   const rolesDb = await prisma.role.findMany({
     select: { id: true, name: true, key: true }, // <-- include key
@@ -42,14 +42,14 @@ export default async function Page() {
     .filter((r) => KEY_SET.has(r.key as RoleId))
     .map((r) => ({ id: r.id, name: r.name, key: r.key }));
 
-  // Optional: warn about unexpected keys in DB
-  const unknown = rolesDb.filter((r) => !KEY_SET.has(r.key as RoleId));
-  if (unknown.length) {
-    console.warn(
-      "Unknown roles in DB:",
-      unknown.map((u) => u.key)
-    );
-  } // <-- id = UUID, key = "admin"
+  // // Optional: warn about unexpected keys in DB
+  // const unknown = rolesDb.filter((r) => !KEY_SET.has(r.key as RoleId));
+  // if (unknown.length) {
+  //   console.warn(
+  //     "Unknown roles in DB:",
+  //     unknown.map((u) => u.key)
+  //   );
+  // } // <-- id = UUID, key = "admin"
 
   return <SignupForm roles={roles} />;
 }

@@ -1,4 +1,3 @@
-// app/admin/settings/page.tsx
 import Link from "next/link";
 
 export default async function SettingsHome() {
@@ -16,11 +15,11 @@ export default async function SettingsHome() {
         >
           <div className="text-lg font-semibold text-cms-primary">سازمان</div>
           <p className="text-sm text-gray-600 mt-1">
-            مدیریت شعب و دپارتمان‌هایی که در بخش‌های مختلف سامانه استفاده
-            می‌شوند.
+            مدیریت شعب، دپارتمان‌ها، نقش‌ها و تخصص‌های پزشکی که در بخش‌های مختلف
+            سامانه استفاده می‌شوند.
           </p>
           <div className="mt-3 text-sm text-gray-500">
-            شعب • دپارتمان‌ها • عناوین شغلی
+            شعب • دپارتمان‌ها • نقش‌ها • تخصص‌ها
           </div>
         </Link>
 

@@ -13,30 +13,39 @@ export function LoginForm() {
     email: "",
     password: "",
   });
-
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const emailErr = validateEmail(form.email).error ?? null;
-  const pwdErr = validateLoginPassword(form.password).error ?? null;
+  // use this only for server/backend messages (auth errors, etc.)
+  const [serverError, setServerError] = useState("");
+
+  // UI gating
+  const [touched, setTouched] = useState({ email: false, password: false });
+  const [submitted, setSubmitted] = useState(false);
+
+  // validations (raw)
+  const emailErrRaw = validateEmail(form.email).error ?? null;
+  const pwdErrRaw = validateLoginPassword(form.password).error ?? null;
+
+  // show errors only when touched OR after submit attempt
+  const emailErr = touched.email || submitted ? emailErrRaw : null;
+  const pwdErr = touched.password || submitted ? pwdErrRaw : null;
 
   const handleEmailChange = (value: string) => {
-    const v = value.trim(); // normalize early
-    setForm((prev) => ({ ...prev, email: v }));
+    setServerError("");
+    setForm((prev) => ({ ...prev, email: value.trim() }));
   };
   const handlePasswordChange = (value: string) => {
+    setServerError("");
     setForm((prev) => ({ ...prev, password: value }));
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setSubmitted(true);
+    setServerError("");
 
-    // validate BEFORE loading
-    if (emailErr || pwdErr) {
-      setError("لطفاً خطاهای فرم را برطرف کنید.");
-      return;
-    }
+    // block if client-side invalid
+    if (emailErrRaw || pwdErrRaw) return;
 
     setIsLoading(true);
     try {
@@ -50,8 +59,7 @@ export function LoginForm() {
       });
       const { active } = await pre.json();
       if (active === false) {
-        setError("حساب کاربری غیرفعال است. لطفاً با مدیریت تماس بگیرید.");
-        setIsLoading(false);
+        setServerError("حساب کاربری غیرفعال است. لطفاً با مدیریت تماس بگیرید.");
         return;
       }
 
@@ -63,14 +71,13 @@ export function LoginForm() {
       });
 
       if (error) {
-        // console.error("signIn.email error:", error); // uncomment while debugging
-        setError(error.message || "رمز عبور یا ایمیل اشتباه است.");
-        return; // <- important: stop here
+        setServerError(error.message || "رمز عبور یا ایمیل اشتباه است.");
+        return;
       }
 
-      // BetterAuth will redirect via callbackURL; nothing else needed
+      // On success BetterAuth will redirect; no further action required
     } catch (err) {
-      setError(
+      setServerError(
         "An unexpected error occurred" +
           (err instanceof Error ? `: ${err.message}` : "")
       );
@@ -79,7 +86,9 @@ export function LoginForm() {
     }
   };
 
-  const submitDisabled = isLoading || !!emailErr || !!pwdErr;
+  // Disable submit while loading or if fields are empty (don’t block just because invalid;
+  // let the user submit to reveal errors)
+  const submitDisabled = isLoading || !form.email || !form.password;
 
   return (
     <div className="flex items-start justify-center pt-16 select-none">
@@ -88,9 +97,10 @@ export function LoginForm() {
           ورود به پنل مدیریت
         </h1>
 
-        {error && (
+        {/* Top banner: only server/back-end errors OR post-submit generic client notice */}
+        {(serverError || (submitted && (emailErrRaw || pwdErrRaw))) && (
           <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-center">
-            {error}
+            {serverError || "لطفاً خطاهای فرم را برطرف کنید."}
           </div>
         )}
 
@@ -110,12 +120,17 @@ export function LoginForm() {
               placeholder="you@example.com"
               value={form.email}
               onChange={(e) => handleEmailChange(e.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, email: true }))}
               required
               inputMode="email"
               lang="en"
+              aria-invalid={Boolean(emailErr)}
+              aria-describedby={emailErr ? "email-error" : undefined}
             />
             {emailErr && (
-              <p className="text-red-500 text-sm mt-1">{emailErr}</p>
+              <p id="email-error" className="text-red-500 text-sm mt-1">
+                {emailErr}
+              </p>
             )}
           </div>
 
@@ -134,9 +149,16 @@ export function LoginForm() {
               placeholder="••••••••"
               value={form.password}
               onChange={(e) => handlePasswordChange(e.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, password: true }))}
               required
+              aria-invalid={Boolean(pwdErr)}
+              aria-describedby={pwdErr ? "pwd-error" : undefined}
             />
-            {pwdErr && <p className="text-red-500 text-sm mt-1">{pwdErr}</p>}
+            {pwdErr && (
+              <p id="pwd-error" className="text-red-500 text-sm mt-1">
+                {pwdErr}
+              </p>
+            )}
           </div>
 
           <button

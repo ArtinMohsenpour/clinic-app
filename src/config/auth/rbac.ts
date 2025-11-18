@@ -49,8 +49,8 @@ export const ACCESS_MATRIX: Record<RoleId, readonly Section[]> = {
   appointments_coordinator: ["dashboard", "appointments", "profile"],
 
   // Finance & insurance
-  accountant: ["dashboard", "accounting", "profile", "settings"],
-  finance_manager: ["dashboard", "accounting", "profile", "settings"],
+  accountant: ["dashboard", "accounting", "profile"],
+  finance_manager: ["dashboard", "accounting", "profile"],
   cashier: ["dashboard", "accounting", "profile"],
   insurance_specialist: ["dashboard", "appointments", "messages", "profile"],
 
@@ -62,14 +62,8 @@ export const ACCESS_MATRIX: Record<RoleId, readonly Section[]> = {
   lab_technician: ["dashboard", "appointments", "messages", "profile"],
   radiology_technician: ["dashboard", "appointments", "messages", "profile"],
   pharmacist: ["dashboard", "messages", "profile", "medicine-inventory"],
-  inventory_manager: [
-    "dashboard",
-    "messages",
-    "medicine-inventory",
-    "profile",
-    "settings",
-  ],
-  procurement_officer: ["dashboard", "messages", "profile", "settings"],
+  inventory_manager: ["dashboard", "messages", "medicine-inventory", "profile"],
+  procurement_officer: ["dashboard", "messages", "profile"],
 } as const;
 
 export const canAccess = (role: RoleId | null | undefined, section: Section) =>

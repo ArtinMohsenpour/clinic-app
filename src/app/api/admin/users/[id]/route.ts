@@ -10,16 +10,13 @@ type IdParam = { id: string };
 
 const asString = (v: unknown) => (typeof v === "string" ? v : undefined);
 const trimOrNull = (v?: string | null): string | null | undefined => {
-  if (v === null) return null; // explicit clear
-  if (typeof v !== "string") return undefined; // don’t touch
+  if (v === null) return null;
+  if (typeof v !== "string") return undefined;
   const t = v.trim();
-  return t ? t : null; // empty string -> null (clear)
+  return t ? t : null;
 };
 
-export async function PUT(
-  req: Request,
-  ctx: { params: Promise<IdParam> } // keep your Promise style
-) {
+export async function PUT(req: Request, ctx: { params: Promise<IdParam> }) {
   const { id } = await ctx.params;
 
   const session = await auth.api.getSession({ headers: req.headers });
@@ -41,21 +38,21 @@ export async function PUT(
 
   const body = await req.json();
 
-  // Basic fields (compatible with your previous shape)
   const {
     name,
     fullname,
     firstName,
     lastName,
     email,
-    role, // single role key (kept as-is)
+    role,
     isActive,
     password,
     phone,
     address,
     mustChangePassword,
-    profile, // NEW: nested profile object
+    profile,
     placement,
+    specialtyId, // <-- NEW
   } = body as {
     name?: unknown;
     fullname?: unknown;
@@ -68,6 +65,7 @@ export async function PUT(
     phone?: string | null;
     address?: string | null;
     mustChangePassword?: boolean;
+    specialtyId?: string | null; // <-- NEW
     profile?: Partial<{
       secondaryEmail: string | null;
       locale: string | null;
@@ -95,7 +93,6 @@ export async function PUT(
 
   const newEmail = asString(email)?.toLowerCase();
 
-  // Unique email check if changing
   if (newEmail) {
     const exists = await prisma.user.findFirst({
       where: { email: newEmail, NOT: { id } },
@@ -110,6 +107,12 @@ export async function PUT(
   }
 
   await prisma.$transaction(async (tx) => {
+    const isDoctor = role
+      ? role === "doctor"
+      : (await tx.user.findFirst({
+          where: { id, roles: { some: { role: { key: "doctor" } } } },
+        })) !== null;
+
     const updatedUser = await tx.user.update({
       where: { id },
       data: {
@@ -121,12 +124,15 @@ export async function PUT(
         ...(typeof mustChangePassword === "boolean"
           ? { mustChangePassword }
           : {}),
+        // <-- NEW LOGIC for specialtyId
+        ...(specialtyId !== undefined
+          ? { specialtyId: isDoctor ? specialtyId : null }
+          : {}),
         updatedAt: new Date(),
       },
       select: { id: true, email: true },
     });
 
-    // Single-role replacement (kept to match your UI)
     if (role) {
       const roleRow = await tx.role.findUnique({ where: { key: role } });
       if (!roleRow) throw new Error("Invalid role");
@@ -136,19 +142,16 @@ export async function PUT(
       });
     }
 
-    // Credentials account updates (email/password)
     if (password || newEmail) {
       const cred = await tx.account.findFirst({
         where: { userId: updatedUser.id, providerId: "credential" },
       });
-
       const updates: Record<string, unknown> = { updatedAt: new Date() };
       if (newEmail) updates["accountId"] = newEmail;
       if (password) {
         if (password.length < 8) throw new Error("Password too short");
         updates["password"] = await bcrypt.hash(password, 12);
       }
-
       if (cred) {
         await tx.account.update({ where: { id: cred.id }, data: updates });
       } else {
@@ -166,7 +169,6 @@ export async function PUT(
       }
     }
 
-    // NEW: Upsert profile from nested payload
     if (profile) {
       await tx.profile.upsert({
         where: { userId: id },
@@ -183,7 +185,6 @@ export async function PUT(
           secondaryEmail: trimOrNull(profile.secondaryEmail),
           locale: trimOrNull(profile.locale),
           timezone: trimOrNull(profile.timezone),
-          // keep notifyByEmail unchanged if omitted:
           ...(profile.notifyByEmail !== undefined
             ? { notifyByEmail: profile.notifyByEmail }
             : {}),
@@ -192,8 +193,8 @@ export async function PUT(
         },
       });
     }
+
     if (placement?.branchId) {
-      // (Optional validation like in Create)
       await tx.userBranch.deleteMany({ where: { userId: id } });
       await tx.userBranch.create({
         data: {
@@ -243,11 +244,12 @@ export async function GET(req: Request, ctx: { params: Promise<IdParam> }) {
       address: true,
       isActive: true,
       image: true,
+      mustChangePassword: true,
+      specialtyId: true, // <-- NEW: Fetch the specialtyId
       roles: {
         select: { role: { select: { id: true, key: true, name: true } } },
         orderBy: { roleId: "asc" },
       },
-      // NEW: include profile so admin can edit it
       profile: {
         select: {
           secondaryEmail: true,
@@ -275,6 +277,7 @@ export async function GET(req: Request, ctx: { params: Promise<IdParam> }) {
 }
 
 export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
+  // ... (DELETE logic remains the same)
   const { id } = await ctx.params;
 
   const session = await auth.api.getSession({ headers: req.headers });
@@ -294,7 +297,6 @@ export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
   });
   if (!can) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  // Safety: prevent FK issues for admin/HR uploads
   const uploadsCount = await prisma.document.count({
     where: { uploadedById: id },
   });
@@ -313,3 +315,4 @@ export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
   await prisma.user.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }
+

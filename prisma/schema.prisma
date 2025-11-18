@@ -26,6 +26,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ========= new enums =========
+enum FormFileKind {
+  ADMISSION
+  CONSENT
+  PRE_VISIT
+  INSURANCE
+  OTHER
+}
+
+enum FormAssetRole {
+  ATTACHMENT
+  IMAGE
+}
+
+enum Weekday {
+  SATURDAY
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
+
 // --------- RBAC ---------
 
 model Role {
@@ -55,10 +79,10 @@ model User {
   id                 String   @id
   name               String
   email              String   @unique
-  emailVerified      Boolean
+  emailVerified      Boolean  @default(false)
   image              String?
-  createdAt          DateTime
-  updatedAt          DateTime
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
   phone              String?
   address            String?
   isActive           Boolean  @default(true)
@@ -77,7 +101,64 @@ model User {
   uploadedDocuments Document[]   @relation("UploadedDocs") // docs this user (admin/HR) uploaded
   auditLogs         AuditLog[]
 
+  // --- NEW: CMS back relations ---
+  uploadedAssets   MediaAsset[] @relation("UserUploadedAssets")
+  articlesAuthored Article[]    @relation("ArticleAuthor")
+  articlesUpdated  Article[]    @relation("ArticleUpdatedBy")
+
+  // NEW:
+  newsAuthored News[] @relation("NewsAuthor")
+  newsUpdated  News[] @relation("NewsUpdatedBy")
+
+  educationsAuthored Education[] @relation("EducationAuthor")
+  educationsUpdated  Education[] @relation("EducationUpdatedBy")
+
+  faqsAuthored Faq[] @relation("FaqAuthor")
+  faqsUpdated  Faq[] @relation("FaqUpdatedBy")
+
+  formFilesAuthored FormFile[] @relation("FormFileAuthor")
+  formFilesUpdated  FormFile[] @relation("FormFileUpdatedBy")
+
+  branchCmsAuthored BranchCMS[] @relation("BranchCMSAuthor")
+  branchCmsUpdated  BranchCMS[] @relation("BranchCMSUpdatedBy")
+
+  servicesAuthored Service[] @relation("ServiceAuthor")
+  servicesUpdated  Service[] @relation("ServiceUpdatedBy")
+
+  insuranceAuthored InsuranceCompany[] @relation("InsuranceAuthor")
+  insuranceUpdated  InsuranceCompany[] @relation("InsuranceUpdatedBy")
+
+  // NEW RELATIONS FOR SCHEDULE
+  scheduleEntries    ScheduleEntry[] @relation("DoctorOnSchedule")
+  schedulesUpdatedBy Schedule[]      @relation("ScheduleUpdatedBy")
+
+  specialtyId String?
+  specialty   Specialty? @relation(fields: [specialtyId], references: [id], onDelete: SetNull)
+
+  heroSlidesAuthored  HeroSlide[]  @relation("HeroSlideAuthor")
+  heroSlidesUpdated   HeroSlide[]  @relation("HeroSlideUpdatedBy")
+  // ------------ ADD THESE NEW LINES TO YOUR USER MODEL ------------
+  staticPagesAuthored StaticPage[] @relation("StaticPageAuthor")
+  staticPagesUpdated  StaticPage[] @relation("StaticPageUpdatedBy")
+  // --- ADDED FOR CAREERS ---
+  careersAuthored     Career[]     @relation("CareerAuthor")
+  careersUpdated      Career[]     @relation("CareerUpdater")
+
   @@map("user")
+}
+
+model Specialty {
+  id   String @id @default(uuid())
+  key  String @unique // e.g., "cardiology"
+  name String @unique // e.g., "Cardiology"
+
+  // Relation: Many doctors can have this specialty
+  users User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("specialty")
 }
 
 model Session {
@@ -160,6 +241,13 @@ model Branch {
   users     UserBranch[]
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+
+  news     NewsBranch[]
+  cms      BranchCMS?
+  services ServiceBranch[]
+
+  // NEW: Relation to Schedule
+  schedule Schedule?
 
   @@map("branch")
 }
@@ -246,4 +334,842 @@ model AuditLog {
 
   @@index([actorId, action, createdAt])
   @@map("audit_log")
+}
+
+// ---------- Content primitives ----------
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
+}
+
+model MediaAsset {
+  id        String  @id @default(uuid())
+  fileKey   String  @unique
+  publicUrl String?
+  alt       String?
+  mimeType  String
+  size      Int
+  width     Int?
+  height    Int?
+
+  uploadedById String?
+  uploadedBy   User?   @relation("UserUploadedAssets", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  // NEW: back-relation for Article.cover
+  coverOfArticles Article[] @relation("ArticleCover")
+
+  // where this asset is used
+  articleMedias ArticleMedia[]
+
+  // NEW:
+  coverOfNews    News[]           @relation("NewsCover")
+  newsMedias     NewsMedia[]
+  educationMedia EducationMedia[]
+
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  coverOfEducation Education[] @relation("EducationCover")
+
+  // Forms & Files relations
+  formPrimaryOf   FormFile[]      @relation("FormPrimaryFile")
+  formPreviewOf   FormFile[]      @relation("FormPreviewImage")
+  formAssets      FormFileAsset[]
+  // Branch hero + gallery
+  branchCmsHeroOf BranchCMS[]     @relation("BranchHero")
+  branchMedias    BranchMedia[]
+
+  coverOfServices Service[]      @relation("ServiceCover")
+  serviceMedias   ServiceMedia[]
+
+  coverOfInsuranceCompanies InsuranceCompany[] @relation("InsuranceCover")
+
+  imageOfHeroSlides HeroSlide[] @relation("HeroSlideImage")
+
+  @@index([uploadedById])
+  @@map("media_asset")
+}
+
+model Tag {
+  id   String @id @default(uuid())
+  key  String @unique
+  name String @unique
+
+  // m2m
+  articleTags ArticleTag[]
+
+  // NEW for news
+  newsTags      NewsTag[]
+  educationTags EducationTag[]
+
+  faqTags FaqTag[]
+
+  formFileTags FormFileTag[]
+
+  serviceTags ServiceTag[]
+
+  @@map("tag")
+}
+
+model Category {
+  id   String @id @default(uuid())
+  key  String @unique
+  name String @unique
+
+  // m2m
+  articleCategories   ArticleCategory[]
+  // NEW for news
+  newsCategories      NewsCategory[]
+  educationCategories EducationCategory[]
+
+  faqCategories FaqCategory[]
+
+  formFileCategories FormFileCategory[]
+
+  serviceCategories ServiceCategory[]
+
+  @@map("category")
+}
+
+// ---------- Articles ----------
+model Article {
+  id          String        @id @default(uuid())
+  slug        String        @unique
+  title       String
+  excerpt     String?
+  body        Json
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+  readingMin  Int?
+
+  // Pair with MediaAsset.coverOfArticles
+  coverId String?
+  cover   MediaAsset? @relation("ArticleCover", fields: [coverId], references: [id], onDelete: SetNull)
+
+  // Pair with User.articlesAuthored
+  authorId String
+  author   User   @relation("ArticleAuthor", fields: [authorId], references: [id])
+
+  // Pair with User.articlesUpdated
+  updatedById String?
+  updatedBy   User?   @relation("ArticleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  // SEO
+  seoTitle       String?
+  seoDescription String?
+
+  // taxonomy
+  tags       ArticleTag[]
+  categories ArticleCategory[]
+
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  media     ArticleMedia[] // gallery
+
+  @@index([status, publishedAt])
+  @@index([createdAt])
+  @@map("article")
+}
+
+model ArticleTag {
+  articleId String
+  tagId     String
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, tagId])
+  @@map("article_tag")
+}
+
+model ArticleCategory {
+  articleId  String
+  categoryId String
+  article    Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, categoryId])
+  @@map("article_category")
+}
+
+model ArticleMedia {
+  articleId String
+  mediaId   String
+  order     Int    @default(0) // for manual sorting
+
+  article Article    @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  media   MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, mediaId])
+  @@index([articleId, order])
+  @@map("article_media")
+}
+
+// ---------- News ----------
+model News {
+  id          String        @id @default(uuid())
+  slug        String        @unique
+  title       String
+  excerpt     String?
+  body        Json
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+
+  // cover
+  coverId String?
+  cover   MediaAsset? @relation("NewsCover", fields: [coverId], references: [id], onDelete: SetNull)
+
+  // authorship
+  authorId    String
+  author      User    @relation("NewsAuthor", fields: [authorId], references: [id])
+  updatedById String?
+  updatedBy   User?   @relation("NewsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  // taxonomy & media
+  tags       NewsTag[]
+  categories NewsCategory[]
+  media      NewsMedia[]
+
+  branches   NewsBranch[]
+  heroSlides HeroSlide[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
+  @@map("news")
+}
+
+model NewsTag {
+  newsId String
+  tagId  String
+  news   News   @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([newsId, tagId])
+  @@map("news_tag")
+}
+
+model NewsCategory {
+  newsId     String
+  categoryId String
+  news       News     @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([newsId, categoryId])
+  @@map("news_category")
+}
+
+model NewsMedia {
+  newsId  String
+  mediaId String
+  order   Int    @default(0)
+
+  news  News       @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  media MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([newsId, mediaId])
+  @@index([newsId, order])
+  @@map("news_media")
+}
+
+// -------- Patient Education --------
+model Education {
+  id          String        @id @default(uuid())
+  title       String
+  slug        String        @unique
+  excerpt     String?
+  body        Json
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+  coverId     String?
+  cover       MediaAsset?   @relation("EducationCover", fields: [coverId], references: [id], onDelete: SetNull)
+
+  authorId    String
+  author      User    @relation("EducationAuthor", fields: [authorId], references: [id])
+  updatedById String?
+  updatedBy   User?   @relation("EducationUpdatedBy", fields: [updatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tags       EducationTag[]
+  categories EducationCategory[]
+  media      EducationMedia[]
+}
+
+model EducationTag {
+  educationId String
+  tagId       String
+  education   Education @relation(fields: [educationId], references: [id])
+  tag         Tag       @relation(fields: [tagId], references: [id])
+
+  @@id([educationId, tagId])
+}
+
+model EducationCategory {
+  educationId String
+  categoryId  String
+  education   Education @relation(fields: [educationId], references: [id])
+  category    Category  @relation(fields: [categoryId], references: [id])
+
+  @@id([educationId, categoryId])
+}
+
+model EducationMedia {
+  educationId String
+  mediaId     String
+  order       Int    @default(0)
+
+  education Education  @relation(fields: [educationId], references: [id])
+  media     MediaAsset @relation(fields: [mediaId], references: [id])
+
+  @@id([educationId, mediaId])
+}
+
+// ---------- FAQ ----------
+model Faq {
+  id          String        @id @default(uuid())
+  slug        String        @unique
+  question    String
+  answer      Json
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+
+  // Ordering & pinning (per category UX — you can sort by order desc then pinned)
+  isPinned Boolean @default(false)
+  order    Int     @default(0)
+
+  // Authors
+  authorId String
+  author   User   @relation("FaqAuthor", fields: [authorId], references: [id])
+
+  updatedById String?
+  updatedBy   User?   @relation("FaqUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  // Taxonomy
+  tags       FaqTag[]
+  categories FaqCategory[]
+
+  // Simple metrics (optional, handy later)
+  views      Int @default(0)
+  helpfulYes Int @default(0)
+  helpfulNo  Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([order])
+  @@map("faq")
+}
+
+model FaqTag {
+  faqId String
+  tagId String
+
+  faq Faq @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([faqId, tagId])
+  @@map("faq_tag")
+}
+
+model FaqCategory {
+  faqId      String
+  categoryId String
+
+  faq      Faq      @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([faqId, categoryId])
+  @@map("faq_category")
+}
+
+// ========= new models =========
+model FormFile {
+  id          String        @id @default(uuid())
+  title       String
+  slug        String        @unique
+  description String?
+  kind        FormFileKind?
+  language    String? // e.g. "fa", "en"
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+
+  // Primary downloadable file (pdf/doc/image)
+  primaryFileId String?
+  primaryFile   MediaAsset? @relation("FormPrimaryFile", fields: [primaryFileId], references: [id], onDelete: SetNull)
+
+  // Optional preview image (thumbnail/cover)
+  previewImageId String?
+  previewImage   MediaAsset? @relation("FormPreviewImage", fields: [previewImageId], references: [id], onDelete: SetNull)
+
+  // Authorship
+  authorId    String
+  author      User    @relation("FormFileAuthor", fields: [authorId], references: [id])
+  updatedById String?
+  updatedBy   User?   @relation("FormFileUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  // Taxonomy & attachments
+  tags       FormFileTag[]
+  categories FormFileCategory[]
+  assets     FormFileAsset[] // attachments (images, extra docs)
+
+  downloads Int @default(0)
+
+  services ServiceFormFile[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
+  @@map("form_file")
+}
+
+model FormFileAsset {
+  formFileId String
+  mediaId    String
+  order      Int           @default(0)
+  role       FormAssetRole @default(ATTACHMENT)
+
+  form  FormFile   @relation(fields: [formFileId], references: [id], onDelete: Cascade)
+  media MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([formFileId, mediaId])
+  @@index([formFileId, order])
+  @@map("form_file_asset")
+}
+
+model FormFileTag {
+  formFileId String
+  tagId      String
+  formFile   FormFile @relation(fields: [formFileId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([formFileId, tagId])
+  @@map("form_file_tag")
+}
+
+model FormFileCategory {
+  formFileId String
+  categoryId String
+  formFile   FormFile @relation(fields: [formFileId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([formFileId, categoryId])
+  @@map("form_file_category")
+}
+
+// ========= Branch CMS (public site content per branch) =========
+model BranchCMS {
+  id       String @id @default(uuid())
+  branchId String @unique
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  // publishing
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+
+  // content
+  title    String? // e.g., page H1
+  subtitle String?
+  body     Json? // e.g., markdown/json AST blocks for the branch page
+
+  // public contact shown on website (separate from Settings.Branch.address/etc.)
+  publicAddress  String?
+  phonePrimary   String?
+  phoneSecondary String?
+  emailPublic    String?
+  mapUrl         String? // Google Maps or OSM URL
+  openingHours   Json? // e.g. [{day:"Sat",open:"08:00",close:"16:00"}, ...]
+
+  // hero & gallery
+  heroId String?
+  hero   MediaAsset?   @relation("BranchHero", fields: [heroId], references: [id], onDelete: SetNull)
+  media  BranchMedia[]
+
+  // audit
+  authorId    String
+  author      User    @relation("BranchCMSAuthor", fields: [authorId], references: [id])
+  updatedById String?
+  updatedBy   User?   @relation("BranchCMSUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
+  @@map("branch_cms")
+}
+
+model BranchMedia {
+  branchCmsId String
+  mediaId     String
+  order       Int    @default(0)
+
+  cms   BranchCMS  @relation(fields: [branchCmsId], references: [id], onDelete: Cascade)
+  media MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([branchCmsId, mediaId])
+  @@index([branchCmsId, order])
+  @@map("branch_media")
+}
+
+// -------- News ↔ Branch (many-to-many) -------
+model NewsBranch {
+  newsId   String
+  branchId String
+
+  news   News   @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@id([newsId, branchId])
+  @@index([branchId])
+  @@index([newsId])
+  @@map("news_branch")
+}
+
+model Service {
+  id          String        @id @default(uuid())
+  slug        String        @unique
+  title       String
+  subtitle    String?
+  excerpt     String?
+  body        Json? // rich content blocks/markdown JSON
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+
+  // Cover + gallery
+  coverId String?
+  cover   MediaAsset?    @relation("ServiceCover", fields: [coverId], references: [id], onDelete: SetNull)
+  media   ServiceMedia[]
+
+  // Authorship
+  authorId    String
+  author      User    @relation("ServiceAuthor", fields: [authorId], references: [id])
+  updatedById String?
+  updatedBy   User?   @relation("ServiceUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  // Taxonomy
+  tags       ServiceTag[]
+  categories ServiceCategory[]
+
+  // Where it’s available
+  branches ServiceBranch[]
+
+  // Downloadable/intake/consent forms tied to this service (optional)
+  forms ServiceFormFile[]
+
+  // UI / listing
+  iconKey        String? // e.g. "stethoscope" (for nav/home tiles)
+  order          Int     @default(0) // manual sort
+  isFeatured     Boolean @default(false)
+  bookingEnabled Boolean @default(false) // future
+
+  // Optional structured info
+  durationMin   Int?
+  priceMin      Int?
+  priceMax      Int?
+  priceCurrency String? // e.g., "IRR", "EUR"
+  preparation   Json? // blocks/markdown JSON
+  aftercare     Json? // blocks/markdown JSON
+
+  // SEO
+  seoTitle       String?
+  seoDescription String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([order])
+  @@map("service")
+}
+
+model ServiceTag {
+  serviceId String
+  tagId     String
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, tagId])
+  @@map("service_tag")
+}
+
+model ServiceCategory {
+  serviceId  String
+  categoryId String
+
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, categoryId])
+  @@map("service_category")
+}
+
+model ServiceMedia {
+  serviceId String
+  mediaId   String
+  order     Int    @default(0)
+
+  service Service    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  media   MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, mediaId])
+  @@index([serviceId, order])
+  @@map("service_media")
+}
+
+model ServiceBranch {
+  serviceId String
+  branchId  String
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  branch  Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, branchId])
+  @@index([branchId])
+  @@index([serviceId])
+  @@map("service_branch")
+}
+
+model ServiceFormFile {
+  serviceId  String
+  formFileId String
+
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  formFile FormFile @relation(fields: [formFileId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, formFileId])
+  @@map("service_form_file")
+}
+
+// ---------------- NEW: InsuranceCompany ----------------
+model InsuranceCompany {
+  id           String  @id @default(uuid())
+  slug         String  @unique
+  name         String // title
+  description  String? // optional long text
+  coverageText String? // “amount of cover” (free text)
+
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+
+  // Cover image (optional)
+  coverId String?
+  cover   MediaAsset? @relation("InsuranceCover", fields: [coverId], references: [id], onDelete: SetNull)
+
+  // Authorship (like other CMS models)
+  authorId    String
+  author      User    @relation("InsuranceAuthor", fields: [authorId], references: [id])
+  updatedById String?
+  updatedBy   User?   @relation("InsuranceUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
+  @@map("insurance_company")
+}
+
+// This model represents the schedule for a single branch
+model Schedule {
+  id       String @id @default(uuid())
+  branchId String @unique // Each branch has one schedule
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  // A schedule is composed of multiple entries (e.g., Dr. Smith on Mondays)
+  entries ScheduleEntry[]
+
+  // Audit fields
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+  updatedBy   User?    @relation("ScheduleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("schedule")
+}
+
+// This model represents a single doctor's shift on a specific day
+model ScheduleEntry {
+  id         String   @id @default(uuid())
+  scheduleId String
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  doctorId String
+  doctor   User   @relation("DoctorOnSchedule", fields: [doctorId], references: [id], onDelete: Cascade)
+
+  dayOfWeek Weekday
+  startTime String // e.g., "09:00"
+  endTime   String // e.g., "17:30"
+  notes     String? // Optional text, e.g., "By appointment only"
+
+  @@index([scheduleId, dayOfWeek])
+  @@map("schedule_entry")
+}
+
+// ---------------- NEW: HeroSlider ----------------
+// in schema.prisma
+
+model HeroSlide {
+  id               String  @id @default(uuid())
+  title            String
+  description      String?
+  callToActionText String?
+  callToActionUrl  String?
+
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+  order       Int           @default(0)
+
+  // Link to the source News article (optional)
+  sourceNewsId String?
+  sourceNews   News?   @relation(fields: [sourceNewsId], references: [id], onDelete: SetNull)
+
+  // Slide Image
+  imageId String?
+  image   MediaAsset? @relation("HeroSlideImage", fields: [imageId], references: [id], onDelete: SetNull)
+
+  // Authorship
+  authorId    String
+  author      User    @relation("HeroSlideAuthor", fields: [authorId], references: [id])
+  updatedById String?
+  updatedBy   User?   @relation("HeroSlideUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([order])
+  @@map("hero_slide")
+}
+
+// ---------------- NEW: StaticPage (Final Version) ----------------
+model StaticPage {
+  id    String @id @default(uuid())
+  slug  String @unique // e.g., "about-us", "contact-us"
+  title String // Page H1 and meta title
+
+  // For rich, long-form content like the "About Us" page body.
+  body Json?
+
+  // A page can have many individual contact items linked to it.
+  contactItems ContactItem[]
+
+  // Standard CMS fields
+  status      PublishStatus @default(DRAFT)
+  publishedAt DateTime?
+
+  // Authorship
+  authorId    String
+  author      User    @relation("StaticPageAuthor", fields: [authorId], references: [id])
+  updatedById String?
+  updatedBy   User?   @relation("StaticPageUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("static_page")
+}
+
+// NEW: Enum to define the different kinds of contact info
+enum ContactItemType {
+  PHONE
+  EMAIL
+  ADDRESS
+}
+
+// NEW: A model to hold a single piece of contact information
+model ContactItem {
+  id     String     @id @default(uuid())
+  pageId String
+  page   StaticPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  type  ContactItemType // e.g., PHONE, EMAIL
+  label String // e.g., "Dentistry Department"
+  value String // e.g., "+1-202-555-0125"
+  url   String? // Optional, for map links on addresses
+
+  // To allow content creators to re-order the contact info
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pageId, order])
+  @@map("contact_item")
+}
+
+enum CareerStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+}
+
+//
+// MODELS for Careers
+//
+
+model Career {
+  id             String         @id @default(cuid())
+  title          String         @db.VarChar(120)
+  description    String?        @db.Text
+  department     String?        @db.VarChar(100)
+  location       String?        @db.VarChar(100)
+  employmentType EmploymentType @default(FULL_TIME)
+  requirements   String?        @db.Text
+  status         CareerStatus   @default(DRAFT)
+
+  authorId    String?
+  updatedById String?
+  author      User?   @relation("CareerAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  updatedBy   User?   @relation("CareerUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  applications CareerApplication[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([authorId])
+  @@index([updatedById])
+}
+
+model CareerApplication {
+  id       String @id @default(cuid())
+  careerId String
+  career   Career @relation(fields: [careerId], references: [id], onDelete: Cascade)
+
+  // Basic applicant info (you can expand this later)
+  name        String  @db.VarChar(100)
+  email       String  @db.VarChar(100)
+  phone       String  @db.VarChar(50)
+  resumeUrl   String  @db.Text // Link to uploaded resume
+  coverLetter String? @db.Text
+
+  submittedAt DateTime @default(now())
+
+  @@index([careerId])
+}
+
+//
+// UPDATE AuditLog action enum
+//
+enum AuditLogAction {
+  // ... existing actions
+  CMS_EDU_CREATE
+  CMS_EDU_UPDATE
+  CMS_EDU_DELETE
+
+  // Add these new actions
+  CMS_CAREER_CREATE
+  CMS_CAREER_UPDATE
+  CMS_CAREER_DELETE
 }
