@@ -1,4 +1,3 @@
-// lib/auth.ts
 import bcrypt from "bcryptjs";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
@@ -9,6 +8,10 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,
+    // --- THIS IS THE FIX ---
+    // Tell the server that the provider ID is "email", not the default "credentials"
+    providerId: "credential",
+    // -----------------------
     password: {
       // OK to keep this signature (string -> Promise<string>)
       async hash(password: string) {

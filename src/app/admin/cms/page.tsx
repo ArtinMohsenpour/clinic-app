@@ -166,22 +166,22 @@ const MODULES: Array<{
     icon: LayoutDashboard,
     group: "Site",
   },
-  {
-    key: "navigation",
-    title: "منوهای سایت",
-    description: "ناوبری هدر و فوتر.",
-    hrefManage: "/admin/cms/navigation",
-    icon: Navigation,
-    group: "Site",
-  },
-  {
-    key: "seo",
-    title: "سئو و ریدایرکت‌ها",
-    description: "عنوان‌ها، متا و مسیرهای جایگزین.",
-    hrefManage: "/admin/cms/seo",
-    icon: Search,
-    group: "Site",
-  },
+  // {
+  //   key: "navigation",
+  //   title: "منوهای سایت",
+  //   description: "ناوبری هدر و فوتر.",
+  //   hrefManage: "/admin/cms/navigation",
+  //   icon: Navigation,
+  //   group: "Site",
+  // },
+  // {
+  //   key: "seo",
+  //   title: "سئو و ریدایرکت‌ها",
+  //   description: "عنوان‌ها، متا و مسیرهای جایگزین.",
+  //   hrefManage: "/admin/cms/seo",
+  //   icon: Search,
+  //   group: "Site",
+  // },
 
   // عملیات
   {

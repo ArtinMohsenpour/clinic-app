@@ -140,6 +140,9 @@ model User {
   // ------------ ADD THESE NEW LINES TO YOUR USER MODEL ------------
   staticPagesAuthored StaticPage[] @relation("StaticPageAuthor")
   staticPagesUpdated  StaticPage[] @relation("StaticPageUpdatedBy")
+  // --- ADDED FOR CAREERS ---
+  careersAuthored     Career[]     @relation("CareerAuthor")
+  careersUpdated      Career[]     @relation("CareerUpdater")
 
   @@map("user")
 }
@@ -1096,4 +1099,77 @@ model ContactItem {
 
   @@index([pageId, order])
   @@map("contact_item")
+}
+
+enum CareerStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+}
+
+//
+// MODELS for Careers
+//
+
+model Career {
+  id             String         @id @default(cuid())
+  title          String         @db.VarChar(120)
+  description    String?        @db.Text
+  department     String?        @db.VarChar(100)
+  location       String?        @db.VarChar(100)
+  employmentType EmploymentType @default(FULL_TIME)
+  requirements   String?        @db.Text
+  status         CareerStatus   @default(DRAFT)
+
+  authorId    String?
+  updatedById String?
+  author      User?   @relation("CareerAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  updatedBy   User?   @relation("CareerUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  applications CareerApplication[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([authorId])
+  @@index([updatedById])
+}
+
+model CareerApplication {
+  id       String @id @default(cuid())
+  careerId String
+  career   Career @relation(fields: [careerId], references: [id], onDelete: Cascade)
+
+  // Basic applicant info (you can expand this later)
+  name        String  @db.VarChar(100)
+  email       String  @db.VarChar(100)
+  phone       String  @db.VarChar(50)
+  resumeUrl   String  @db.Text // Link to uploaded resume
+  coverLetter String? @db.Text
+
+  submittedAt DateTime @default(now())
+
+  @@index([careerId])
+}
+
+//
+// UPDATE AuditLog action enum
+//
+enum AuditLogAction {
+  // ... existing actions
+  CMS_EDU_CREATE
+  CMS_EDU_UPDATE
+  CMS_EDU_DELETE
+
+  // Add these new actions
+  CMS_CAREER_CREATE
+  CMS_CAREER_UPDATE
+  CMS_CAREER_DELETE
 }

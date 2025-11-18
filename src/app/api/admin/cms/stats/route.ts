@@ -71,6 +71,10 @@ export async function GET(req: Request) {
     pagesTotal,
     pagesDrafts,
     pagesPublished,
+    // Careers
+    careersTotal,
+    careersDrafts,
+    careersPublished,
 
     // Review queues
     reviewArticles,
@@ -83,6 +87,8 @@ export async function GET(req: Request) {
     reviewInsurances,
     reviewHeroSlides,
     reviewPages,
+    reviewCareers,
+
     // Activity
     activity,
   ] = await Promise.all([
@@ -129,6 +135,12 @@ export async function GET(req: Request) {
     prisma.staticPage.count(),
     prisma.staticPage.count({ where: { status: "DRAFT" } }),
     prisma.staticPage.count({ where: { status: "PUBLISHED" } }),
+
+    // Careers counts
+    prisma.career.count(),
+    prisma.career.count({ where: { status: "DRAFT" } }),
+    // For careers, "OPEN" is effectively "PUBLISHED"
+    prisma.career.count({ where: { status: "OPEN" } }),
 
     // ----- review queues -----
     prisma.article.findMany({
@@ -192,6 +204,13 @@ export async function GET(req: Request) {
     }),
     prisma.staticPage.findMany({
       where: { status: { in: ["DRAFT", "SCHEDULED"] } },
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+      select: { id: true, title: true, updatedAt: true },
+    }),
+    // Careers review queue (DRAFT status)
+    prisma.career.findMany({
+      where: { status: "DRAFT" },
       orderBy: { updatedAt: "desc" },
       take: 8,
       select: { id: true, title: true, updatedAt: true },
@@ -270,6 +289,12 @@ export async function GET(req: Request) {
       type: "page" as const,
       updatedAt: p.updatedAt.toISOString(),
     })),
+    ...reviewCareers.map((c) => ({
+      id: c.id,
+      title: c.title,
+      type: "career" as const,
+      updatedAt: c.updatedAt.toISOString(),
+    })),
   ]
     .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
     .slice(0, 8);
@@ -313,10 +338,14 @@ export async function GET(req: Request) {
       published: heroSlidesPublished,
     },
     "static-pages": {
-      // Corrected key to match UI and routes
       total: pagesTotal,
       drafts: pagesDrafts,
       published: pagesPublished,
+    },
+    careers: {
+      total: careersTotal,
+      drafts: careersDrafts,
+      published: careersPublished, // This represents OPEN careers
     },
 
     reviewQueue,
@@ -328,4 +357,3 @@ export async function GET(req: Request) {
     canViewActivity,
   });
 }
-
