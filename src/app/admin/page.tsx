@@ -266,11 +266,11 @@ export default function AdminDashboard() {
                     return (
                       <div
                         key={mod.key}
-                        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_10px_40px_-15px_rgba(182,235,229)] hover:border-[#13502982] select-none"
+                        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_10px_40px_-15px_rgba(0,128,113)] hover:border-[rgba(19,80,41,0.51)] select-none"
                       >
                         {/* Header & Icon */}
                         <div className="flex items-start justify-between">
-                          <div className="rounded-xl p-3 bg-[#f5f5f7] text-[#008071] transition-colors group-hover:bg-[#B6EBE5]/20 group-hover:text-[#135029]">
+                          <div className="rounded-xl p-3 bg-[#f5f5f7] text-[rgb(0,128,113)] transition-colors group-hover:bg-[#B6EBE5]/20 group-hover:text-[#135029]">
                             <Icon className="h-6 w-6" />
                           </div>
                           {/* Optional subtle trend icon just for visuals */}
