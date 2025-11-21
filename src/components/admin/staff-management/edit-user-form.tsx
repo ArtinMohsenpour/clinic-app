@@ -7,6 +7,7 @@ import {
 } from "@/lib/validators/validators";
 import { ProfileState } from "@/config/types/auth/types";
 import { useRouter } from "next/navigation";
+import { User } from "lucide-react";
 
 // ---- Types ----
 type PlacementView = {
@@ -535,8 +536,8 @@ export default function EditUserForm({ userId }: { userId: string }) {
             className="w-28 h-28 rounded-full object-cover border border-gray-200 shadow-sm"
           />
         ) : (
-          <div className="w-28 h-28 rounded-full bg-gray-100 border border-cms-secondary flex items-center justify-center text-xl font-semibold text-gray-600">
-            {initials || "?"}
+          <div className="w-28 h-28 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400">
+            <User className="w-12 h-12" />
           </div>
         )}
 
