@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
-import { CareerStatus, EmploymentType } from "@prisma/client";
+import { CareerStatus } from "@prisma/client";
 import { requireCmsAccess } from "../_auth";
 
 // Force dynamic to ensure auth checks happen on every request

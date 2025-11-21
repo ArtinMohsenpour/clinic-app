@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
+import { User } from "lucide-react";
 
 /* --- Types reflect your GET /api/admin/profile/me selection --- */
 type Doc = { id: string; title: string; type: string; createdAt: string };
@@ -295,11 +296,7 @@ export default function ProfileClient() {
   if (error && !me) return <Banner kind="error" text={error} />;
   if (!me) return null;
 
-  const avatarUrl =
-    avatarPreview ||
-    me.image ||
-    me.profile?.avatarThumbUrl ||
-    "/placeholder-avatar.png";
+  const avatarUrl = avatarPreview || me.image || me.profile?.avatarThumbUrl;
 
   // Compute initials from name for blank avatar fallback
   const parts = (me.name || "").trim().split(/\s+/).filter(Boolean);
@@ -326,8 +323,9 @@ export default function ProfileClient() {
             className="w-28 h-28 rounded-full object-cover border border-gray-200 shadow-sm"
           />
         ) : (
-          <div className="w-28 h-28 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-xl font-semibold text-gray-600">
-            {initials || "?"}
+          // ✅ CHANGED: Show User Icon instead of Initials
+          <div className="w-28 h-28 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400">
+            <User className="w-12 h-12" />
           </div>
         )}
 
@@ -600,7 +598,7 @@ export default function ProfileClient() {
                   <td className="p-3">
                     <a
                       className="px-3 py-1.5 rounded-lg border border-navbar-secondary text-navbar-secondary hover:bg-navbar-secondary hover:text-white transition"
-                      href={`/api/profile/documents/${d.id}/download`}
+                      href={`/api/admin/profile/documents/${d.id}/download`}
                     >
                       دانلود
                     </a>
