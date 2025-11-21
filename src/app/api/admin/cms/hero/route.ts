@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCmsAccess } from "../_auth";
 import { z } from "zod";
-import type { Prisma } from "@prisma/client";
+import { revalidateTag } from "next/cache"; // Import this
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -39,7 +39,6 @@ export async function GET(req: Request) {
     },
   });
 
-  // Note: No pagination for hero slides as they are managed by manual order.
   return NextResponse.json({ items: slides });
 }
 
@@ -79,6 +78,9 @@ export async function POST(req: Request) {
     },
     select: { id: true, title: true, status: true },
   });
+
+  // ⚡️ AUTOMATION: Invalidate the homepage cache
+  revalidateTag("home-hero");
 
   await prisma.auditLog.create({
     data: {

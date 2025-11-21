@@ -4,8 +4,7 @@ import "./Navbar.css";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation"; // ✅ App Router
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation"; 
 
 export function Navbar({ user }: { user?: { name: string } }) {
   const pathname = usePathname();
