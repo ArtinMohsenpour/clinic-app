@@ -223,6 +223,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
       }
     });
 
+     revalidateTag("home-services");
+
     await prisma.auditLog.create({
       data: {
         actorId: session.user.id,

@@ -19,12 +19,24 @@ export const getHeroSlides = unstable_cache(
   ["home-hero"],
   { tags: ["home-hero"] }
 );
+ 
+// 1.2 StaticPages Section Data
+export const getHomeStaticPages = unstable_cache(
+  async () => {
+    return prisma.staticPage.findMany({
+      // FIX: Use 'status' enum instead of 'isActive'
+      where: { status: "PUBLISHED" },
+    });
+  },
+  ["home-static-pages"],
+  { tags: ["home-static-pages"] }
+);
 
 // 2. Services Section Data
 export const getHomeServices = unstable_cache(
   async () => {
     return prisma.service.findMany({
-      take: 6,
+      take: 3,
       // FIX: Use 'status' enum
       where: { status: "PUBLISHED" },
       orderBy: { order: "asc" },

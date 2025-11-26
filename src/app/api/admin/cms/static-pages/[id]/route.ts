@@ -16,7 +16,7 @@ const UpdatePageSchema = z.object({
     .string()
     .regex(/^[a-z0-9-]+$/)
     .optional(),
-  body: z.any().optional(), // From a rich text editor
+  body: z.string().nullable().optional(), // From a rich text editor
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).optional(),
   contactItems: z
     .array(

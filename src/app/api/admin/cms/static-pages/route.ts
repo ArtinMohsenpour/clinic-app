@@ -11,7 +11,7 @@ export const revalidate = 0;
 const CreatePageSchema = z.object({
   title: z.string().min(2, "Title is required"),
   slug: z.string().regex(/^[a-z0-9-]+$/, "Slug must be lowercase with dashes"),
-  body: z.any().optional(), // Assuming body is a JSON object from a rich text editor
+  body: z.string().nullable().optional(), // Assuming body is a JSON object from a rich text editor
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
   contactItems: z
     .array(
@@ -53,6 +53,9 @@ export async function POST(req: Request) {
   const parsed = CreatePageSchema.safeParse(json);
 
   if (!parsed.success) {
+    // Debugging: Log the specific validation error to the terminal
+    console.error("Validation Error:", parsed.error.flatten());
+
     return NextResponse.json(
       { error: "invalid_body", details: parsed.error.flatten() },
       { status: 400 }
