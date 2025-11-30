@@ -100,10 +100,11 @@ export default function HomeServicesSection({
       </div>
 
       {/* View All Button */}
-      <div className="flex justify-center mt-12">
+      <div className="flex justify-center mt-24">
         <Link href="/services">
-          <button className="px-8 py-3 cursor-pointer rounded-full bg-service-bg text-white border-[1px] border-[#ffffff70] font-bold hover:bg-service-bg-2 transition-all shadow-md hover:shadow-lg shadow-service-bg hover:shadow-service-bg hover:-translate-y-1">
+          <button className="px-10 py-3 cursor-pointer rounded-full bg-service-bg-2 text-white border border-white/20 font-bold hover:bg-service-bg transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 font-yekan flex items-center gap-3 active:scale-95">
             مشاهده همه خدمات
+            <ArrowLeft className="w-5 h-5" />
           </button>
         </Link>
       </div>

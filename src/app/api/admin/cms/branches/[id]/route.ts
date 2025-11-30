@@ -137,6 +137,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
     },
   });
 
+  revalidateTag("home-branches");
   revalidateTag("branch-cms");
   return NextResponse.json({ ok: true });
 }

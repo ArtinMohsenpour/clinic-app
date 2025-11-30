@@ -74,17 +74,25 @@ export const getLatestArticles = unstable_cache(
 export const getHomeBranches = unstable_cache(
   async () => {
     return prisma.branch.findMany({
-      take: 4,
+      take: 5, // Changed to 3 to match the grid layout
       where: { isActive: true },
+      orderBy: { createdAt: "asc" }, // Ensure consistent ordering
       select: {
         id: true,
         name: true,
         city: true,
-        // FIX: Select the 'cms' relation to access public contact info
+        key: true, // REQUIRED: Needed for the link href
         cms: {
           select: {
             phonePrimary: true,
-            publicAddress: true, 
+            publicAddress: true,
+            // REQUIRED: Needed for the card image
+            hero: {
+              select: {
+                publicUrl: true,
+                alt: true,
+              },
+            },
           },
         },
       },

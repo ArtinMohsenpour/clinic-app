@@ -162,9 +162,9 @@ export default function HomeArticlesSection({
       </div>
 
       {/* View All Button */}
-      <div className="flex justify-center">
+      <div className="flex justify-center mt-24">
         <Link href="/articles">
-          <button className="px-10 py-3 bg-golden-yellow cursor-pointer text-white  border border-[#ffffff6b] rounded-full text-lg font-bold hover:bg-golden-yellow-2 hover:text-white transition-all duration-300 font-yekan shadow-md hover:shadow-lg shadow-black/30 hover:shadow-black/50 flex items-center gap-2 hover:-translate-y-1">
+          <button className="px-10 py-3 cursor-pointer rounded-full bg-golden-yellow text-white border border-white/20 font-bold hover:bg-golden-yellow-2 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 font-yekan flex items-center gap-3 active:scale-95">
             مشاهده آرشیو اخبار
             <ArrowLeft className="w-5 h-5" />
           </button>

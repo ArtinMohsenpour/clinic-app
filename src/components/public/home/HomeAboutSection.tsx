@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { StaticPage } from "@prisma/client";
+import { ArrowLeft } from "lucide-react";
 
 interface HomeAboutSectionProps {
   data: StaticPage[];
@@ -18,9 +19,12 @@ export default function HomeAboutSection({ data }: HomeAboutSectionProps) {
     <div className="container mx-auto px-6">
       <div className="flex flex-col items-center justify-center text-center max-w-7xl mx-auto">
         {/* 1. Title: Top Middle */}
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#1d1d1f] mb-8 leading-tight">
-          {aboutPage.title}
-        </h2>
+        <div className="flex flex-col items-center justify-center text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-service-bg leading-tight font-yekan mb-4">
+            {aboutPage.title}
+          </h2>
+          <div className="w-24 h-1 bg-cms-primary rounded-full"></div>
+        </div>
 
         {/* 2. Text: Below Title (Centered & Readable Width) */}
         <div className="text-gray-600 text-lg md:text-xl leading-9 font-light max-w-5xl text-justify">
@@ -28,10 +32,11 @@ export default function HomeAboutSection({ data }: HomeAboutSectionProps) {
         </div>
 
         {/* Optional: A clean Call to Action button below the text */}
-        <div className="mt-10">
+        <div className="flex justify-center mt-24">
           <Link href="/about">
-            <button className="px-8 py-3 cursor-pointer rounded-full bg-navbar-primary text-white border-[1px] border-[#ffffff70] font-bold hover:bg-navbar-secondary transition-all shadow-md hover:shadow-lg shadow-cms-primary hover:shadow-cms-primary hover:-translate-y-1">
+            <button className="px-10 py-3 cursor-pointer rounded-full bg-navbar-secondary text-white border border-white/20 font-bold hover:bg-navbar-hover transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 font-yekan flex items-center gap-3 active:scale-95">
               بیشتر بدانید
+              <ArrowLeft className="w-5 h-5" />
             </button>
           </Link>
         </div>
