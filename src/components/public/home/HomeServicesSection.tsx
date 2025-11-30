@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Service } from "@prisma/client";
-import "./HomeServicesSection.css";
 import { ArrowLeft } from "lucide-react"; // Optional: adds a nice icon to the button
 
 // Define the extended type
@@ -24,14 +23,14 @@ export default function HomeServicesSection({
   data,
 }: HomeServicesSectionProps) {
   if (!data || data.length === 0) return null;
-  console.log("HomeServicesSection data:", data);
   return (
     <div className="mx-auto px-6 md:px-24">
       {/* Section Header */}
       <div className="flex flex-col items-center justify-center text-center mb-16">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-service-bg leading-tight font-yekan">
+        <h2 className="text-3xl md:text-4xl font-extrabold text-service-bg leading-tight font-yekan mb-4">
           راهکارهای تخصصی برای سلامت شما
         </h2>
+        <div className="w-24 h-1 bg-service-bg rounded-full"></div>
       </div>
 
       {/* Services Grid */}
@@ -71,7 +70,7 @@ export default function HomeServicesSection({
             </div>
 
             {/* Gradient Overlay (Always visible at bottom to make text readable, expands on hover) */}
-            <div className="absolute inset-0 bg-gradient-to-t from-navbar-primary/90 via-navbar-primary/20 to-transparent opacity-60 group-hover:opacity-90 group-hover:from-navbar-primary group-hover:via-navbar-primary/60 group-hover:to-navbar-primary/10 transition-all duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-t from-service-bg/90 via-service-bg/20 to-transparent opacity-60 group-hover:opacity-90 group-hover:from-service-bg group-hover:via-service-bg/60 group-hover:to-service-bg/10 transition-all duration-500" />
 
             {/* Content Container */}
             <div className="absolute inset-0 flex flex-col justify-end p-6 text-white translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
@@ -89,7 +88,7 @@ export default function HomeServicesSection({
                 </p>
 
                 <div className="flex justify-end mb-2">
-                  <span className="inline-flex items-center gap-2 px-4 py-2 bg-golden-yellow text-white text-sm font-bold rounded-xl shadow-md border border-[#fff0] hover:bg-cms-primary hover:shadow-sm hover:shadow-[#ffffff7e] hover:border-[#ffffff69] transition-colors duration-100 font-yekan">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 bg-golden-yellow text-white text-sm font-bold rounded-xl shadow-md border border-[#fff0] hover:bg-service-bg hover:shadow-xs hover:shadow-[#ffffff7e] hover:border-[#ffffff69] transition-colors duration-100 font-yekan">
                     مشاهده جزئیات
                     <ArrowLeft className="w-4 h-4" />
                   </span>
@@ -103,7 +102,7 @@ export default function HomeServicesSection({
       {/* View All Button */}
       <div className="flex justify-center mt-12">
         <Link href="/services">
-          <button className="px-8 py-3 cursor-pointer rounded-full bg-navbar-primary text-white border-[1px] border-[#ffffff70] font-bold hover:bg-navbar-secondary transition-all shadow-md hover:shadow-lg shadow-cms-primary hover:shadow-cms-primary hover:-translate-y-1">
+          <button className="px-8 py-3 cursor-pointer rounded-full bg-service-bg text-white border-[1px] border-[#ffffff70] font-bold hover:bg-service-bg-2 transition-all shadow-md hover:shadow-lg shadow-service-bg hover:shadow-service-bg hover:-translate-y-1">
             مشاهده همه خدمات
           </button>
         </Link>

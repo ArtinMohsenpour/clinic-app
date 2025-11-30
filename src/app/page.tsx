@@ -8,6 +8,7 @@ import {
 import HeroSlider from "@/components/public/home/HeroSlider";
 import HomeAboutSection from "@/components/public/home/HomeAboutSection";
 import HomeServicesSection from "@/components/public/home/HomeServicesSection";
+import HomeArticlesSection from "@/components/public/home/HomeArticleSection";
 
 export const metadata = {
   title: "صفحه اصلی | کلینیک عصر سلامت",
@@ -25,12 +26,14 @@ export default async function Home() {
       getHomeStaticPages(),
     ]);
 
+  console.log("Home page - articles:", articles);
+
   return (
     <main className="min-h-screen bg-background font-yekan">
       {/* 1. Hero */}
       <HeroSlider slides={heroSlides} />
 
-      {/* 2. About: */}
+      {/* 2. About */}
       <section className="py-16 md:py-18  relative">
         <div className=" absolute top-1 right-0 px-5 py-2 mt-3  bg-cms-primary text-white rounded-l-sm">
           درباره ما
@@ -47,6 +50,16 @@ export default async function Home() {
         </div>
         <div className="container mx-auto px-4">
           <HomeServicesSection data={services} />
+        </div>
+      </section>
+
+      {/* 4. Articles */}
+      <section className="py-16 md:py-18  relative">
+        <div className=" absolute top-1 right-0 px-5 py-2 mt-3  bg-golden-yellow text-white rounded-l-sm">
+          مقالات
+        </div>
+        <div className="container mx-auto px-4">
+          <HomeArticlesSection data={articles} />
         </div>
       </section>
 

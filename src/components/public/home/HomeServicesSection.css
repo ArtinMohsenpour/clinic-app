@@ -1,8 +1,0 @@
-.card-overlay {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 10px;
-  background: linear-gradient(to top, #002147 0%, transparent 100%);
-}

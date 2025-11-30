@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { Prisma } from "@prisma/client"; // ⬅️ use Prisma types
 import { requireCmsAccess } from "../_auth";
+import { revalidateTag } from "next/cache";
 
 // ——— Schemas ———
 const BodyMarkdown = z.object({
@@ -181,6 +182,8 @@ export async function POST(req: Request) {
     },
     select: { id: true },
   });
+
+  revalidateTag("home-articles");
 
   await prisma.auditLog.create({
     data: {
