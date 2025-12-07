@@ -5,10 +5,8 @@ import { unstable_cache } from "next/cache";
 export const getHeroSlides = unstable_cache(
   async () => {
     return prisma.heroSlide.findMany({
-      // FIX: Use 'status' enum instead of 'isActive'
       where: { status: "PUBLISHED" },
       orderBy: { order: "asc" },
-      // Include image so we can display it
       include: {
         image: {
           select: { publicUrl: true, alt: true },
@@ -19,12 +17,11 @@ export const getHeroSlides = unstable_cache(
   ["home-hero"],
   { tags: ["home-hero"] }
 );
- 
+
 // 1.2 StaticPages Section Data
 export const getHomeStaticPages = unstable_cache(
   async () => {
     return prisma.staticPage.findMany({
-      // FIX: Use 'status' enum instead of 'isActive'
       where: { status: "PUBLISHED" },
     });
   },
@@ -37,10 +34,8 @@ export const getHomeServices = unstable_cache(
   async () => {
     return prisma.service.findMany({
       take: 3,
-      // FIX: Use 'status' enum
       where: { status: "PUBLISHED" },
       orderBy: { order: "asc" },
-      // Include icon/cover if you have them
       include: {
         cover: { select: { publicUrl: true, alt: true } },
       },
@@ -55,9 +50,7 @@ export const getLatestArticles = unstable_cache(
   async () => {
     return prisma.article.findMany({
       take: 3,
-      // FIX: Use 'status' enum instead of 'published' boolean
       where: { status: "PUBLISHED" },
-      // Better to sort by publish date than creation date
       orderBy: { publishedAt: "desc" },
       include: {
         author: { select: { name: true, image: true } },
@@ -70,23 +63,22 @@ export const getLatestArticles = unstable_cache(
   { tags: ["home-articles"] }
 );
 
-// 4. Branches Data (Map/Footer list)
+// 4. Branches Data
 export const getHomeBranches = unstable_cache(
   async () => {
     return prisma.branch.findMany({
-      take: 5, // Changed to 3 to match the grid layout
+      take: 5,
       where: { isActive: true },
-      orderBy: { createdAt: "asc" }, // Ensure consistent ordering
+      orderBy: { createdAt: "asc" },
       select: {
         id: true,
         name: true,
         city: true,
-        key: true, // REQUIRED: Needed for the link href
+        key: true,
         cms: {
           select: {
             phonePrimary: true,
             publicAddress: true,
-            // REQUIRED: Needed for the card image
             hero: {
               select: {
                 publicUrl: true,
@@ -100,4 +92,23 @@ export const getHomeBranches = unstable_cache(
   },
   ["home-branches"],
   { tags: ["home-branches"] }
+);
+
+// 5. Insurances Data
+export const getHomeInsurances = unstable_cache(
+  async () => {
+    return prisma.insuranceCompany.findMany({
+      take: 4,
+      where: { status: "PUBLISHED" },
+      orderBy: { createdAt: "desc" }, // Updated to use createdAt since 'order' is not in the schema
+      include: {
+        cover: {
+          // Updated to match schema relation name 'cover'
+          select: { publicUrl: true, alt: true },
+        },
+      },
+    });
+  },
+  ["home-insurances"],
+  { tags: ["home-insurances"] }
 );

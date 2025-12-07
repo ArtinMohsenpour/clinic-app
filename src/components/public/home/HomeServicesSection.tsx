@@ -88,7 +88,7 @@ export default function HomeServicesSection({
                 </p>
 
                 <div className="flex justify-end mb-2">
-                  <span className="inline-flex items-center gap-2 px-4 py-2 bg-golden-yellow text-white text-sm font-bold rounded-xl shadow-md border border-[#fff0] hover:bg-service-bg hover:shadow-xs hover:shadow-[#ffffff7e] hover:border-[#ffffff69] transition-colors duration-100 font-yekan">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 text-white text-sm font-bold rounded-xl shadow-md border border-[#fff0] hover:bg-service-bg hover:shadow-xs hover:shadow-[#ffffff7e] hover:border-[#ffffff69] transition-colors duration-100 font-yekan">
                     مشاهده جزئیات
                     <ArrowLeft className="w-4 h-4" />
                   </span>
@@ -99,8 +99,14 @@ export default function HomeServicesSection({
         ))}
       </div>
 
+      <div className="mt-16 text-center max-w-3xl mx-auto px-4">
+        <p className="text-lg lg:text-2xl text-gray-600 font-yekan leading-relaxed">
+          سلامت شما، اولویت ماست. بهترین‌ها را برایتان فراهم کرده‌ایم.
+        </p>
+      </div>
+
       {/* View All Button */}
-      <div className="flex justify-center mt-24">
+      <div className="flex justify-center mt-16">
         <Link href="/services">
           <button className="px-10 py-3 cursor-pointer rounded-full bg-service-bg-2 text-white border border-white/20 font-bold hover:bg-service-bg transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 font-yekan flex items-center gap-3 active:scale-95">
             مشاهده همه خدمات
