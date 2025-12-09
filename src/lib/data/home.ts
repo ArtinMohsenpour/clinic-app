@@ -100,10 +100,9 @@ export const getHomeInsurances = unstable_cache(
     return prisma.insuranceCompany.findMany({
       take: 4,
       where: { status: "PUBLISHED" },
-      orderBy: { createdAt: "desc" }, // Updated to use createdAt since 'order' is not in the schema
+      orderBy: { createdAt: "desc" },
       include: {
         cover: {
-          // Updated to match schema relation name 'cover'
           select: { publicUrl: true, alt: true },
         },
       },
@@ -111,4 +110,28 @@ export const getHomeInsurances = unstable_cache(
   },
   ["home-insurances"],
   { tags: ["home-insurances"] }
+);
+
+// 6. Footer Data
+export const getFooterData = unstable_cache(
+  async () => {
+    const [mainBranch] = await Promise.all([
+      prisma.branch
+        .findUnique({
+          where: { key: "tehran-main" },
+          include: { cms: true },
+        })
+        .then(async (branch) => {
+          if (branch) return branch;
+          // Fallback to first available branch if 'tehran-main' is missing
+          return prisma.branch.findFirst({
+            include: { cms: true },
+          });
+        }),
+    ]);
+
+    return { mainBranch };
+  },
+  ["footer-data"],
+  { tags: ["footer-data", "home-branches", "static-pages"] }
 );

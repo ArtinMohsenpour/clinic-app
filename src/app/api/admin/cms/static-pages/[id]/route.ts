@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCmsAccess } from "../../_auth";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import { revalidateTag } from "next/cache";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -139,6 +140,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
       { status: 500 }
     );
   }
+  revalidateTag("static-pages");
 
   return NextResponse.json({ ok: true });
 }
@@ -153,11 +155,13 @@ export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
     // Because of the `onDelete: Cascade` in the schema, deleting the page
     // will automatically delete all of its associated ContactItem records.
     await prisma.staticPage.delete({ where: { id } });
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (e) {
     // This will likely fail if the page ID is not found.
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  revalidateTag("static-pages");
 
   return NextResponse.json({ ok: true });
 }
