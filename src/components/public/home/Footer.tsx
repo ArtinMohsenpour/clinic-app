@@ -166,7 +166,10 @@ export default async function Footer() {
             >
               حریم خصوصی
             </Link>
-            <Link href="/terms" className="hover:text-white transition-colors">
+            <Link
+              href="/imprint"
+              className="hover:text-white transition-colors"
+            >
               قوانین و مقررات
             </Link>
           </div>

@@ -175,8 +175,10 @@ export default function PageForm({
           value={body}
           onChange={(e) => setBody(e.target.value)}
           rows={10}
-          className="w-full rounded-xl border font-yekan p-2 text-sm"
-          placeholder="Text content for the page body..."
+          className="w-full rounded-xl border font-mono p-2 text-sm"
+          placeholder="محتوای صفحه را اینجا وارد کنید...
+          میتواند شامل متن ساده یا JSON برای محتوای غنی‌تر باشد."
+          dir="ltr"
         />
       </div>
 

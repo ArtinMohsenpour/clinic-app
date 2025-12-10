@@ -135,3 +135,36 @@ export const getFooterData = unstable_cache(
   ["footer-data"],
   { tags: ["footer-data", "home-branches", "static-pages"] }
 );
+
+// 7. Imprint Page Data (Specific Fetcher)
+export const getImprintPage = unstable_cache(
+  async () => {
+    return prisma.staticPage.findUnique({
+      where: { slug: "imprint" },
+      include: {
+        contactItems: {
+          orderBy: { order: "asc" },
+        },
+      },
+    });
+  },
+  ["imprint-page"],
+  { tags: ["static-pages", "imprint-page"] }
+);
+
+
+// 8. Privacy Page Data
+export const getPrivacyPage = unstable_cache(
+  async () => {
+    return prisma.staticPage.findUnique({
+      where: { slug: "privacy" },
+      include: {
+        contactItems: {
+          orderBy: { order: "asc" },
+        },
+      },
+    });
+  },
+  ["privacy-page"],
+  { tags: ["static-pages", "privacy-page"] }
+);
