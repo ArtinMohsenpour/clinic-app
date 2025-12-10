@@ -70,8 +70,8 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
 
           {/* Content Overlay */}
           <div className="absolute inset-0 flex items-center select-none ">
-            <div className="container mx-auto px-6 sm:px-12 lg:px-60  ">
-              <div className="max-w-fit flex flex-col items-start text-right px-5 py-5 bg-[#0000002e] shadow-lg shadow-gray-900 space-y-6 sm:space-y-8 backdrop-blur-[4px] rounded-3xl border-[1px] border-white/20">
+            <div className="container mx-auto px-6 sm:px-12 lg:px-60">
+              <div className="max-w-fit flex flex-col items-start text-right px-5 py-5 backdrop-blur-[4px] shadow-lg  space-y-6 sm:space-y-8  rounded-3xl border-[1px] border-white/20">
                 {/* Title */}
                 <h2 className="text-4xl sm:text-5xl lg:text-5xl font-bold text-[#ffffff] leading-tight drop-shadow-xl animate-in fade-in slide-in-from-right-8 duration-700">
                   {slide.title}
@@ -89,7 +89,7 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
                   <div className="pt-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
                     <Link
                       href={slide.callToActionUrl}
-                      className="backdrop-blur-[12px] inline-flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 hover:bg-cms-secondary text-white border-2 border-[#ffffff51]  rounded-xl text-lg sm:text-xl font-bold transition-all transform hover:-translate-y-1 hover:shadow-xl shadow-md shadow-gray-900 active:scale-95"
+                      className="backdrop-blur-[12px] inline-flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 hover:bg-white/10 text-white border-2 border-[#ffffff51] rounded-xl text-lg sm:text-xl font-bold shadow-gray-900 active:scale-95"
                     >
                       {slide.callToActionText}
                       <ChevronLeft className="w-5 h-5 mr-2" />

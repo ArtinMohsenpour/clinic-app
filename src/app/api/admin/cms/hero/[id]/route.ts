@@ -110,7 +110,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  revalidateTag("home-hero");
+  
   await prisma.auditLog.create({
     data: {
       actorId: session.user.id,
@@ -118,6 +118,6 @@ export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
       targetId: id,
     },
   });
-
+  revalidateTag("home-hero");
   return NextResponse.json({ ok: true });
 }

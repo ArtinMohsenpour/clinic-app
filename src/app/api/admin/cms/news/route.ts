@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCmsAccess } from "../_auth";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
+import { revalidateTag } from "next/cache";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -198,6 +199,8 @@ export async function POST(req: Request) {
       meta: { slug: created.slug, status: created.status },
     },
   });
+
+  revalidateTag("home-hero");
 
   return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
 }
