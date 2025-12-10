@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { requireCmsAccess } from "../../_auth";
+import { revalidateTag } from "next/cache";
 
 type IdParam = { id: string };
-
-
 
 const BodyMarkdown = z.object({
   type: z.literal("markdown"),
@@ -58,7 +57,7 @@ const PatchSchema = z
   });
 
 export async function GET(_req: Request, ctx: { params: Promise<IdParam> }) {
-    const gate = await requireCmsAccess(_req);
+  const gate = await requireCmsAccess(_req);
   if ("error" in gate) return gate.error;
 
   const { id } = await ctx.params;
@@ -91,7 +90,7 @@ export async function GET(_req: Request, ctx: { params: Promise<IdParam> }) {
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
-   const gate = await requireCmsAccess(req);
+  const gate = await requireCmsAccess(req);
   if ("error" in gate) return gate.error;
   const { session } = gate;
   const { id } = await ctx.params;
@@ -209,12 +208,14 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
     // optional: swallow logging errors
   }
 
+  revalidateTag("home-articles");
+
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
-   const gate = await requireCmsAccess(req);
-   if ("error" in gate) return gate.error;
+  const gate = await requireCmsAccess(req);
+  if ("error" in gate) return gate.error;
   const { session } = gate;
   const { id } = await ctx.params;
 
@@ -230,6 +231,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
         },
       });
     } catch {}
+    revalidateTag("home-articles");
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "delete_failed" }, { status: 400 });

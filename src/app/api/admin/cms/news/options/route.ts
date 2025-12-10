@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCmsAccess } from "../../_auth";
+import { revalidateTag } from "next/cache";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,6 +24,8 @@ export async function GET(req: Request) {
       title: true,
     },
   });
+
+   revalidateTag("home-hero");
 
   return NextResponse.json(newsOptions);
 }

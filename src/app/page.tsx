@@ -1,75 +1,101 @@
+import {
+  getHeroSlides,
+  getHomeServices,
+  getLatestArticles,
+  getHomeBranches,
+  getHomeStaticPages,
+  getHomeInsurances,
+} from "@/lib/data/home";
 import HeroSlider from "@/components/public/home/HeroSlider";
+import HomeAboutSection from "@/components/public/home/HomeAboutSection";
+import HomeServicesSection from "@/components/public/home/HomeServicesSection";
+import HomeArticlesSection from "@/components/public/home/HomeArticleSection";
+import HomeBranchesSection from "@/components/public/home/HomeBranchesSection";
+import HomeInsurancesSection from "@/components/public/home/HomeInsurancesSection";
 
-// app/page.tsx
-export default function Home() {
+export const metadata = {
+  title: "صفحه اصلی | کلینیک عصر سلامت",
+  description: "خدمات پزشکی و درمانی با بالاترین کیفیت",
+};
+
+export default async function Home() {
+  // 1. Fetch data in parallel for maximum speed
+  const [heroSlides, services, articles, branches, staticPages, insurances] =
+    await Promise.all([
+      getHeroSlides(),
+      getHomeServices(),
+      getLatestArticles(),
+      getHomeBranches(),
+      getHomeStaticPages(),
+      getHomeInsurances(),
+    ]);
+
   return (
-    <div className="my-5">
-      {/* Hero Section */}
+    <main className="min-h-screen bg-background font-yekan">
+      {/* 1. Hero */}
+      {heroSlides && heroSlides.length > 0 && (
+        <HeroSlider slides={heroSlides} />
+      )}
 
-      <HeroSlider />
-
-      {/* About Section */}
-      <section className="mt-16 ">
-        <h2 className="text-3xl font-bold font-digikala text-navbar-secondary mb-4">
-          درباره ما
-        </h2>
-        <p className="text-lg font-bnazanin text-gray-700 leading-relaxed">
-          مرکز ما با هدف ارتقای سلامت بیماران و ارائه خدماتی با کیفیت و مطابق با
-          استانداردهای روز دنیا تأسیس شده است. ما با بهره‌گیری از بهترین متخصصان
-          و جدیدترین تکنولوژی‌ها، محیطی ایمن و آرامش‌بخش برای بیماران فراهم
-          کرده‌ایم.
-        </p>
-      </section>
-
-      {/* Services Section */}
-      <section className="mt-16">
-        <h2 className="text-3xl font-bold font-digikala text-navbar-secondary mb-8">
-          خدمات ما
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          <div className="p-6 bg-white shadow rounded-lg text-center">
-            <h3 className="text-xl font-bold font-nastaliq text-navbar-secondary mb-2">
-              دیالیز
-            </h3>
-            <p className="text-gray-600 font-bnazanin">
-              ارائه خدمات دیالیز با تجهیزات مدرن و کادر حرفه‌ای.
-            </p>
+      {/* 2. About */}
+      {staticPages && staticPages.length > 0 && (
+        <section className="py-16 md:py-18 relative bg-background-3">
+          <div className="absolute top-1 right-0 px-5 py-2 mt-3 bg-cms-primary text-white rounded-l-sm hidden md:flex">
+            درباره ما
           </div>
-          <div className="p-6 bg-white shadow rounded-lg text-center">
-            <h3 className="text-xl font-bold font-nastaliq text-navbar-secondary mb-2">
-              مشاوره پزشکی
-            </h3>
-            <p className="text-gray-600 font-bnazanin">
-              مشاوره حضوری و آنلاین توسط بهترین پزشکان متخصص.
-            </p>
+          <div className="container mx-auto px-4">
+            <HomeAboutSection data={staticPages} />
           </div>
-          <div className="p-6 bg-white shadow rounded-lg text-center">
-            <h3 className="text-xl font-bold font-nastaliq text-navbar-secondary mb-2">
-              آزمایشگاه تخصصی
-            </h3>
-            <p className="text-gray-600 font-bnazanin">
-              انجام آزمایش‌های تخصصی با دقت و سرعت بالا.
-            </p>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* Call to Action */}
-      <section className="mt-16 text-center">
-        <h2 className="text-3xl font-bold font-digikala text-navbar-secondary">
-          وقت مشاوره بگیرید
-        </h2>
-        <p className="text-lg font-bnazanin text-gray-700 mt-2">
-          هم‌اکنون وقت ملاقات خود را رزرو کنید و از خدمات تخصصی ما بهره‌مند
-          شوید.
-        </p>
-        <a
-          href="/appointments"
-          className="inline-block mt-6 bg-navbar-secondary text-white px-8 py-3 rounded-lg text-lg font-bold hover:bg-navbar-hover transition"
-        >
-          رزرو نوبت
-        </a>
-      </section>
-    </div>
+      {/* 3. Services */}
+      {services && services.length > 0 && (
+        <section className="py-16 md:py-18 relative bg-background-2">
+          <div className="absolute top-1 right-0 px-5 py-2 mt-3 bg-service-bg text-white rounded-l-sm hidden md:flex">
+            خدمات
+          </div>
+          <div className="container mx-auto px-4">
+            <HomeServicesSection data={services} />
+          </div>
+        </section>
+      )}
+
+      {/* 4. Articles */}
+      {articles && articles.length > 0 && (
+        <section className="py-16 md:py-18 relative bg-background-3">
+          <div className="absolute top-1 right-0 px-5 py-2 mt-3 bg-golden-yellow text-white rounded-l-sm hidden md:flex">
+            مقالات
+          </div>
+          <div className="container mx-auto px-4">
+            <HomeArticlesSection data={articles} />
+          </div>
+        </section>
+      )}
+
+      {/* 5. Branches */}
+      {branches && branches.length > 0 && (
+        <section className="py-16 md:py-18 relative bg-background-2">
+          <div className="absolute top-1 right-0 px-5 py-2 mt-3 bg-cms-primary text-white rounded-l-sm hidden md:flex">
+            شعبه ها
+          </div>
+          <div className="container mx-auto px-4">
+            <HomeBranchesSection data={branches} />
+          </div>
+        </section>
+      )}
+
+      {/* 6. Insurances */}
+      {insurances && insurances.length > 0 && (
+        <section className="py-16 md:py-18 relative bg-background-3">
+          <div className="absolute top-1 right-0 px-5 py-2 mt-3 bg-service-bg text-white rounded-l-sm hidden md:flex">
+            بیمه ها
+          </div>
+          <div className="container mx-auto px-4">
+            <HomeInsurancesSection data={insurances} />
+          </div>
+        </section>
+      )}
+    </main>
   );
 }

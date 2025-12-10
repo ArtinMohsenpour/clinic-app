@@ -201,6 +201,8 @@ export async function POST(req: Request) {
       select: { id: true },
     });
 
+    revalidateTag("home-services");
+
     await prisma.auditLog.create({
       data: {
         actorId: session.user.id,
@@ -209,8 +211,6 @@ export async function POST(req: Request) {
         meta: { title: body.title, slug: body.slug, status: body.status },
       },
     });
-
-    revalidateTag("services");
     return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {

@@ -20,10 +20,14 @@ import {
   Activity,
   Users,
   Layers,
-  CheckCircle2,
-  Edit3,
-  TrendingUp,
+  Search,
+  BellRing,
+  Sparkles,
+  Database,
+  Globe,
+  BriefcaseBusiness,
 } from "lucide-react";
+import Link from "next/link";
 
 /* ---------- Types ---------- */
 type ModuleKey =
@@ -62,117 +66,148 @@ type DashboardData = Record<ModuleKey, StatCounts> & {
 /* ---------- Configuration ---------- */
 const GROUP_ORDER = ["Operations", "Clinic Data", "Site", "Content"] as const;
 
+const GROUP_CONFIG = {
+  Operations: {
+    label: "عملیات و پرسنل",
+    icon: BriefcaseBusiness,
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+    border: "border-blue-100",
+  },
+  "Clinic Data": {
+    label: "اطلاعات کلینیک",
+    icon: Database,
+    color: "text-indigo-600",
+    bg: "bg-indigo-50",
+    border: "border-indigo-100",
+  },
+  Site: {
+    label: "تنظیمات سایت",
+    icon: Globe,
+    color: "text-purple-600",
+    bg: "bg-purple-50",
+    border: "border-purple-100",
+  },
+  Content: {
+    label: "مدیریت محتوا",
+    icon: FileText,
+    color: "text-emerald-600",
+    bg: "bg-emerald-50",
+    border: "border-emerald-100",
+  },
+};
+
 const MODULES: Array<{
   key: ModuleKey;
   title: string;
-  description: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   group: (typeof GROUP_ORDER)[number];
+  href: string;
 }> = [
   // --- Operations ---
   {
     key: "users",
-    title: "پرسنل و کاربران",
-    description: "مشاهده لیست تمام پزشکان، پرستاران و کارکنان اداری.",
+    title: "پرسنل",
     icon: Users,
     group: "Operations",
+    href: "/admin/staff-management",
   },
   {
     key: "careers",
-    title: "فرصت‌های شغلی",
-    description: "مدیریت آگهی‌های استخدام و درخواست‌های ارسال شده.",
+    title: "استخدام",
     icon: Briefcase,
     group: "Operations",
+    href: "/admin/cms/careers",
   },
 
   // --- Clinic Data ---
   {
     key: "branches",
     title: "شعبه‌ها",
-    description: "اطلاعات تماس، آدرس و جزئیات مربوط به هر شعبه.",
     icon: Landmark,
     group: "Clinic Data",
+    href: "/admin/settings/organization/branches",
   },
   {
     key: "services",
-    title: "خدمات درمانی",
-    description: "لیست تخصص‌ها و خدمات پزشکی ارائه شده در کلینیک.",
+    title: "خدمات",
     icon: Stethoscope,
     group: "Clinic Data",
+    href: "/admin/cms/services",
   },
   {
     key: "schedules",
-    title: "برنامه پزشکان",
-    description: "مشاهده شیفت‌های کاری و برنامه حضور هفتگی پزشکان.",
+    title: "برنامه",
     icon: CalendarClock,
     group: "Clinic Data",
+    href: "/admin/cms/doctors-schedule",
   },
   {
     key: "insurance",
-    title: "بیمه‌های طرف قرارداد",
-    description: "لیست شرکت‌های بیمه و جزئیات پوشش‌دهی آنها.",
+    title: "بیمه‌ها",
     icon: ShieldCheck,
     group: "Clinic Data",
+    href: "/admin/cms/insurances",
   },
   {
     key: "departments",
-    title: "دپارتمان‌ها",
-    description: "مدیریت بخش‌های داخلی و ساختار سازمانی کلینیک.",
+    title: "دپارتمان",
     icon: Layers,
     group: "Clinic Data",
+    href: "/admin/settings/organization/departments",
   },
 
   // --- Site ---
   {
     key: "hero",
-    title: "اسلایدر اصلی",
-    description: "مدیریت بنرها و تصاویر متحرک صفحه اصلی سایت.",
+    title: "اسلایدر",
     icon: Megaphone,
     group: "Site",
+    href: "/admin/cms/hero",
   },
   {
     key: "static-pages",
-    title: "صفحات ایستا",
-    description: "مدیریت محتوای صفحاتی مانند «درباره ما» و «تماس با ما».",
+    title: "صفحات",
     icon: LayoutDashboard,
     group: "Site",
+    href: "/admin/cms/static-pages",
   },
 
   // --- Content ---
   {
     key: "articles",
     title: "مقالات",
-    description: "مدیریت مطالب وبلاگ و مقالات علمی سایت.",
     icon: BookOpen,
     group: "Content",
+    href: "/admin/cms/articles",
   },
   {
     key: "news",
-    title: "اخبار و اطلاعیه‌ها",
-    description: "انتشار آخرین اخبار و رویدادهای مربوط به کلینیک.",
+    title: "اخبار",
     icon: Newspaper,
     group: "Content",
+    href: "/admin/cms/news",
   },
   {
     key: "education",
-    title: "آموزش بیمار",
-    description: "محتوای آموزشی، بروشورها و ویدیوهای سلامت.",
+    title: "آموزش",
     icon: FileText,
     group: "Content",
+    href: "/admin/cms/education",
   },
   {
     key: "faq",
-    title: "سوالات متداول",
-    description: "بانک پرسش و پاسخ‌های رایج بیماران.",
+    title: "سوالات",
     icon: HelpCircle,
     group: "Content",
+    href: "/admin/cms/faq",
   },
   {
     key: "forms",
-    title: "فرم‌های دانلود",
-    description: "فایل‌های PDF، فرم‌های پذیرش و رضایت‌نامه‌ها.",
+    title: "فرم‌ها",
     icon: FileDown,
     group: "Content",
+    href: "/admin/cms/forms",
   },
 ];
 
@@ -200,20 +235,20 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex h-[80vh] w-full items-center justify-center bg-[#f5f5f7]">
-        <Loader2 className="h-12 w-12 animate-spin text-[#008071]/50" />
+      <div className="flex h-screen w-full items-center justify-center bg-[#f8f9fa]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#008071]" />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="flex h-[50vh] flex-col items-center justify-center gap-4 text-gray-500 font-yekan">
-        <AlertCircle className="h-16 w-16 text-red-400" />
-        <p className="text-lg font-medium">خطا در دریافت اطلاعات داشبورد</p>
+      <div className="flex h-screen flex-col items-center justify-center gap-4 text-gray-500 font-yekan bg-[#f8f9fa]">
+        <AlertCircle className="h-10 w-10 text-red-400" />
+        <p className="font-medium text-sm">خطا در بارگذاری داشبورد</p>
         <button
           onClick={() => window.location.reload()}
-          className="rounded-xl bg-[#f5f5f7] px-6 py-2 text-[#008071] hover:bg-white transition-colors shadow-sm"
+          className="text-xs text-[#008071] hover:underline"
         >
           تلاش مجدد
         </button>
@@ -222,203 +257,243 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] p-6 pb-20 font-yekan select-none">
-      {/* Header */}
-      <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div className="min-h-screen bg-[#f8f9fa] p-4 md:p-6 font-yekan select-none flex flex-col gap-6">
+      {/* --- HEADER --- */}
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#135029] tracking-tight">
+          <h1 className="text-xl font-black text-gray-800 tracking-tight flex items-center gap-2">
             داشبورد مدیریت
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
           </h1>
-          <p className="text-gray-500 mt-2 text-base">
-            نمای کلی عملکرد سیستم، آمار و وضعیت محتوا
+          <p className="text-gray-400 text-[10px] mt-1 font-medium">
+            {new Date().toLocaleDateString("fa-IR", { dateStyle: "full" })}
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-[#008071] font-medium bg-white px-4 py-2 rounded-full shadow-sm border border-[#B6EBE5]/30">
-          <CalendarClock className="w-4 h-4" />
-          {new Date().toLocaleDateString("fa-IR", { dateStyle: "full" })}
+
+        <div className="flex items-center gap-3">
+          <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-200 text-gray-400 hover:text-[#008071] transition-colors cursor-pointer">
+            <Search className="w-4 h-4" />
+          </div>
+          <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-200 text-gray-400 hover:text-amber-500 transition-colors cursor-pointer relative">
+            <BellRing className="w-4 h-4" />
+            <span className="absolute top-1.5 right-2 w-1.5 h-1.5 bg-red-500 rounded-full border border-white"></span>
+          </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-        {/* MAIN CONTENT (Modules) */}
-        <div className="xl:col-span-8 space-y-12">
+      {/* --- MAIN BOARD (Columns) --- */}
+      <div className="bg-white rounded-[24px] shadow-sm border border-gray-200 p-6 overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           {GROUP_ORDER.map((groupName) => {
             const groupModules = MODULES.filter((m) => m.group === groupName);
+            const groupConfig = GROUP_CONFIG[groupName];
+            const GroupIcon = groupConfig.icon;
+
             if (groupModules.length === 0) return null;
 
             return (
-              <section key={groupName} className="space-y-5">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-1.5 rounded-full bg-[#135029]" />
-                  <h2 className="text-xl font-bold text-[#135029] select-none">
-                    {groupName === "Content" && "مدیریت محتوا"}
-                    {groupName === "Clinic Data" && "اطلاعات کلینیک"}
-                    {groupName === "Site" && "تنظیمات سایت"}
-                    {groupName === "Operations" && "عملیات و پرسنل"}
+              <div
+                key={groupName}
+                className="flex flex-col gap-4 px-0 md:px-4 first:pr-0 last:pl-0 pt-6 md:pt-0 first:pt-0 border-r border-gray-200 first:border-0"
+              >
+                {/* Column Header */}
+                <div className="flex items-center gap-2 mb-2 bg-cms-secondary/20 p-2 rounded-lg">
+                  <div
+                    className={`p-1.5 rounded-lg ${groupConfig.bg} ${groupConfig.color}`}
+                  >
+                    <GroupIcon className="w-3.5 h-3.5" />
+                  </div>
+                  <h2 className="text-base font-bold text-gray-700">
+                    {groupConfig.label}
                   </h2>
+                  <span className="text-[14px] text-gray-400 bg-gray-50 px-1.5 rounded-md mr-auto">
+                    {groupModules.length}
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Cards List */}
+                <div className="flex flex-col gap-3">
                   {groupModules.map((mod) => {
                     const stats = data[mod.key];
                     const Icon = mod.icon;
 
                     return (
-                      <div
+                      <Link
                         key={mod.key}
-                        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_10px_40px_-15px_rgba(0,128,113)] hover:border-[rgba(19,80,41,0.51)] select-none"
+                        href={mod.href}
+                        className="group flex items-center justify-between bg-white border border-gray-300 hover:border-[#008071]/30 hover:shadow-md rounded-xl p-3 transition-all duration-200 relative overflow-hidden"
                       >
-                        {/* Header & Icon */}
-                        <div className="flex items-start justify-between">
-                          <div className="rounded-xl p-3 bg-[#f5f5f7] text-[rgb(0,128,113)] transition-colors group-hover:bg-[#B6EBE5]/20 group-hover:text-[#135029]">
-                            <Icon className="h-6 w-6" />
-                          </div>
-                          {/* Optional subtle trend icon just for visuals */}
-                          <TrendingUp className="w-4 h-4 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        </div>
+                        {/* Hover Overlay */}
+                        <div className="absolute inset-0 bg-gray-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
 
-                        {/* Text Content */}
-                        <div className="mt-5">
-                          <h3 className="text-lg font-bold text-gray-800 group-hover:text-[#135029] transition-colors">
+                        {/* Left: Icon & Title */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gray-50 text-gray-400 group-hover:bg-[#008071] group-hover:text-white flex items-center justify-center transition-colors shrink-0 shadow-sm border border-gray-100/50">
+                            <Icon className="w-5 h-5" />
+                          </div>
+                          <h3 className="font-bold text-gray-700 text-sm group-hover:text-[#008071] transition-colors">
                             {mod.title}
                           </h3>
-                          <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-                            {mod.description}
-                          </p>
                         </div>
 
-                        {/* Stats Footer */}
-                        <div className="mt-6 flex items-center justify-between border-t border-gray-50 pt-4">
-                          <div className="flex flex-col">
-                            <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
-                              کل
-                            </span>
-                            <span className="text-2xl font-bold text-[#135029]">
+                        {/* Right: Stats Row */}
+                        <div className="flex items-center gap-4 pl-1">
+                          {/* Active / Published */}
+                          {(stats?.published ?? 0) > 0 && (
+                            <div className="flex flex-col items-center">
+                              <span className="text-lg font-black text-emerald-600 leading-none bg-cms-secondary/10 p-2 rounded">
+                                {stats?.published?.toLocaleString("fa-IR")}
+                              </span>
+                              <span className="text-[9px] text-gray-400 font-medium mt-1">
+                                فعال
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Drafts (if any) */}
+                          {(stats?.drafts ?? 0) > 0 && (
+                            <div className="flex flex-col items-center">
+                              <span className="text-lg font-black text-amber-500 leading-none bg-amber-500/10 p-2 rounded">
+                                {stats?.drafts?.toLocaleString("fa-IR")}
+                              </span>
+                              <span className="text-[9px] text-gray-400 font-medium mt-1">
+                                پیش‌نویس
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Total Count */}
+                          <div
+                            className={`flex flex-col items-center ${
+                              (stats?.published ?? 0) > 0 ||
+                              (stats?.drafts ?? 0) > 0
+                                ? "border-r border-gray-100 pr-4 mr-1"
+                                : ""
+                            }`}
+                          >
+                            <span className="text-lg font-black text-gray-800 leading-none bg-gray-600/10 p-2 rounded">
                               {stats?.total?.toLocaleString("fa-IR") ?? "۰"}
                             </span>
+                            <span className="text-[9px] text-gray-400 font-medium mt-1">
+                              کل
+                            </span>
                           </div>
-
-                          {/* Stats Display */}
-                          {mod.key === "users" ? (
-                            <div className="text-right flex flex-col items-end">
-                              <span className="text-[10px] font-bold text-[#008071] flex items-center gap-1 bg-[#B6EBE5]/30 px-2 py-0.5 rounded-md">
-                                <CheckCircle2 className="w-3 h-3" /> فعال
-                              </span>
-                              <div className="text-lg font-bold text-gray-700 mt-1">
-                                {stats?.published?.toLocaleString("fa-IR") ??
-                                  "۰"}
-                              </div>
-                            </div>
-                          ) : stats?.drafts !== undefined ? (
-                            <div className="text-right flex flex-col items-end">
-                              <span className="text-[10px] font-bold text-amber-600 flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-md">
-                                <Edit3 className="w-3 h-3" /> پیش‌نویس
-                              </span>
-                              <div className="text-lg font-bold text-gray-700 mt-1">
-                                {stats.drafts > 0
-                                  ? stats.drafts.toLocaleString("fa-IR")
-                                  : "-"}
-                              </div>
-                            </div>
-                          ) : null}
                         </div>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>
-              </section>
+              </div>
             );
           })}
         </div>
+      </div>
 
-        {/* SIDEBAR (Widgets) */}
-        <div className="xl:col-span-4 space-y-8">
-          {/* Review Queue Widget */}
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-5 border-b border-gray-50 bg-gradient-to-r from-amber-50/50 to-transparent flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="bg-amber-100 p-1.5 rounded-lg text-amber-700">
-                  <Clock className="w-5 h-5" />
-                </div>
-                <h3 className="font-bold text-gray-800">نیاز به بررسی</h3>
+      {/* --- BOTTOM SECTION: Feeds --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-64 shrink-0">
+        {/* 1. Review Queue */}
+        <div className="bg-white rounded-[24px] p-5 shadow-sm border border-gray-200 flex flex-col h-full overflow-hidden">
+          <div className="flex items-center justify-between mb-4 shrink-0 bg-amber-500/20 p-2 rounded-lg">
+            <div className="flex items-center gap-2 ">
+              <div className="p-1.5 bg-amber-50 text-amber-600 rounded-lg border border-amber-100">
+                <Clock className="w-4 h-4" />
               </div>
-              <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full font-bold">
-                {data.reviewQueue.length.toLocaleString("fa-IR")}
-              </span>
+              <h3 className="font-bold text-gray-700 text-xs">نیاز به بررسی</h3>
             </div>
+            <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-bold">
+              {data.reviewQueue.length.toLocaleString("fa-IR")} مورد
+            </span>
+          </div>
 
-            <div className="divide-y divide-gray-50 max-h-[450px] overflow-y-auto custom-scrollbar">
-              {data.reviewQueue.length === 0 ? (
-                <div className="p-8 text-center flex flex-col items-center gap-2 text-gray-400">
-                  <ShieldCheck className="w-10 h-10 opacity-20" />
-                  <p className="text-sm">همه چیز به‌روز است.</p>
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2">
+            {data.reviewQueue.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-gray-300 gap-2">
+                <div className="bg-gray-50 p-3 rounded-full">
+                  <Sparkles className="w-5 h-5" />
                 </div>
-              ) : (
-                data.reviewQueue.map((item) => (
-                  <div
-                    key={`${item.type}-${item.id}`}
-                    className="block p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex justify-between items-start gap-3">
-                      <p className="text-sm font-semibold text-gray-700 line-clamp-2">
-                        {item.title}
-                      </p>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-[10px] bg-[#f5f5f7] text-gray-500 px-2 py-0.5 rounded-md font-medium">
+                <span className="text-[10px] font-medium">
+                  همه چیز عالی است!
+                </span>
+              </div>
+            ) : (
+              data.reviewQueue.map((item) => (
+                <div
+                  key={`${item.type}-${item.id}`}
+                  className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl hover:border-amber-200 hover:bg-amber-50/30 transition-all group cursor-default"
+                >
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <span className="text-[11px] font-bold text-gray-700 truncate group-hover:text-amber-700 transition-colors">
+                      {item.title}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] bg-gray-50 px-1.5 py-px rounded text-gray-500 border border-gray-100">
                         {item.type}
                       </span>
-                      <span className="text-[10px] text-gray-400 dir-ltr font-mono">
+                      <span className="text-[9px] text-gray-400 dir-ltr font-mono">
                         {new Date(item.updatedAt).toLocaleDateString("fa-IR")}
                       </span>
                     </div>
                   </div>
-                ))
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* 2. Recent Activity */}
+        {data.canViewActivity && (
+          <div className="bg-white rounded-[24px] p-5 shadow-sm border border-gray-200 flex flex-col h-full overflow-hidden">
+            <div className="flex items-center justify-between mb-4 shrink-0 bg-cms-secondary/20 p-2 rounded-lg">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100">
+                  <Activity className="w-4 h-4" />
+                </div>
+                <h3 className="font-bold text-gray-700 text-xs">
+                  فعالیت‌های اخیر
+                </h3>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+              {data.recentActivity.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-[10px] text-gray-300">
+                  هنوز فعالیتی ثبت نشده است.
+                </div>
+              ) : (
+                <div className="relative border-r border-dashed border-gray-200 mr-2 my-1 space-y-6">
+                  {data.recentActivity.map((log, idx) => (
+                    <div key={log.id} className="relative pr-5 group">
+                      <div
+                        className={`absolute -right-[5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 ring-4 ring-white transition-all duration-300 ${
+                          idx === 0
+                            ? "bg-emerald-500 border-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.1)]"
+                            : "bg-gray-100 border-gray-200 group-hover:bg-emerald-400 group-hover:border-emerald-400"
+                        }`}
+                      />
+                      <div className="flex flex-col">
+                        <p className="text-[10px] font-bold text-gray-600 leading-snug group-hover:text-gray-900 transition-colors truncate">
+                          {log.action}
+                        </p>
+                        <span className="text-[9px] text-gray-400 dir-ltr text-right font-mono mt-0.5">
+                          {new Date(log.createdAt).toLocaleString("fa-IR", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
-
-          {/* Activity Log Widget */}
-          {data.canViewActivity && (
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-5 border-b border-gray-50 bg-gradient-to-r from-[#B6EBE5]/30 to-transparent flex items-center gap-2">
-                <div className="bg-[#B6EBE5]/50 p-1.5 rounded-lg text-[#008071]">
-                  <Activity className="w-5 h-5" />
-                </div>
-                <h3 className="font-bold text-gray-800">فعالیت‌های اخیر</h3>
-              </div>
-              <ul className="divide-y divide-gray-50 max-h-[400px] overflow-y-auto custom-scrollbar">
-                {data.recentActivity.length === 0 ? (
-                  <li className="p-8 text-center text-sm text-gray-400">
-                    هنوز فعالیتی ثبت نشده است.
-                  </li>
-                ) : (
-                  data.recentActivity.map((log) => (
-                    <li
-                      key={log.id}
-                      className="p-4 hover:bg-[#f5f5f7] transition-colors"
-                    >
-                      <div className="flex gap-3">
-                        <div className="flex flex-col items-center gap-1">
-                          <div className="w-2 h-2 rounded-full bg-[#008071] ring-4 ring-[#B6EBE5]/30" />
-                          <div className="w-0.5 h-full bg-gray-100" />
-                        </div>
-                        <div className="flex-1 pb-2">
-                          <p className="text-xs font-bold text-gray-700">
-                            {log.action}
-                          </p>
-                          <p className="text-[10px] text-gray-400 mt-1 dir-ltr text-left font-mono">
-                            {new Date(log.createdAt).toLocaleString("fa-IR")}
-                          </p>
-                        </div>
-                      </div>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );

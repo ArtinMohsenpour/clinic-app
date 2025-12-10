@@ -46,10 +46,10 @@ function fromLocalDTInputValue(v: string) {
 }
 
 // ---- limits (adjust as you like) ----
-const TITLE_MAX = 120;
-const EXCERPT_MAX = 300;
+const TITLE_MAX = 150;
+const EXCERPT_MAX = 400;
 const SLUG_MAX = 200;
-const BODY_WORD_MAX = 3000;
+const BODY_WORD_MAX = 4000;
 
 const COVER_ALLOWED = ["image/jpeg", "image/png", "image/webp"];
 const COVER_MAX_SIZE = 4 * 1024 * 1024;
@@ -374,14 +374,14 @@ export default function ArticleForm({
             />
 
             <Field
-              label="چکیده (اختیاری)"
+              label="منبع"
               value={excerpt ?? ""}
               onChange={(v) => setExcerpt(v.slice(0, EXCERPT_MAX))}
               inputProps={{ maxLength: EXCERPT_MAX }}
               counter={`${(excerpt ?? "").length}/${EXCERPT_MAX}`}
               error={
                 (excerpt ?? "").length > EXCERPT_MAX
-                  ? "متن چکیده طولانی است"
+                  ? "متن منبع طولانی است"
                   : undefined
               }
             />

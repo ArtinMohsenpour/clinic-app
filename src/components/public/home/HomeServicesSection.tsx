@@ -1,0 +1,119 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import type { Service } from "@prisma/client";
+import { ArrowLeft } from "lucide-react"; // Optional: adds a nice icon to the button
+
+// Define the extended type
+type ServiceWithCover = Service & {
+  cover?: {
+    publicUrl: string | null;
+    alt: string | null;
+  } | null;
+  excerpt?: string | null;
+  subtitle?: string | null;
+};
+
+interface HomeServicesSectionProps {
+  data: ServiceWithCover[];
+}
+
+export default function HomeServicesSection({
+  data,
+}: HomeServicesSectionProps) {
+  if (!data || data.length === 0) return null;
+  return (
+    <div className="mx-auto px-6 md:px-24">
+      {/* Section Header */}
+      <div className="flex flex-col items-center justify-center text-center mb-16">
+        <h2 className="text-3xl md:text-4xl font-extrabold text-service-bg leading-tight font-yekan mb-4">
+          راهکارهای تخصصی برای سلامت شما
+        </h2>
+        <div className="w-24 h-1 bg-service-bg rounded-full"></div>
+      </div>
+
+      {/* Services Grid */}
+      <div className="flex flex-wrap flex-row justify-center gap-8">
+        {data.map((service) => (
+          <Link
+            href={`/services/${service.slug}`}
+            key={service.id}
+            className="group relative block w-80 h-80 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 ease-out"
+          >
+            {/* Background Image */}
+            <div className="absolute inset-0 h-full w-full bg-gray-100">
+              {service.cover?.publicUrl ? (
+                <Image
+                  src={service.cover.publicUrl}
+                  alt={service.cover.alt || service.title}
+                  fill
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:blur-[2px]"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+                  <svg
+                    className="w-16 h-16 text-blue-200"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                    />
+                  </svg>
+                </div>
+              )}
+            </div>
+
+            {/* Gradient Overlay (Always visible at bottom to make text readable, expands on hover) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-service-bg/90 via-service-bg/20 to-transparent opacity-60 group-hover:opacity-90 group-hover:from-service-bg group-hover:via-service-bg/60 group-hover:to-service-bg/10 transition-all duration-500" />
+
+            {/* Content Container */}
+            <div className="absolute inset-0 flex flex-col justify-end p-6 text-white translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+              {/* Title - Always Visible/Prominent */}
+              <h3 className="text-2xl font-bold font-yekan mb-2 drop-shadow-md group-hover:mb-4 transition-all duration-300">
+                {service.title}
+              </h3>
+
+              {/* Hidden Content - Slides up and fades in on hover */}
+              <div className="h-0 overflow-hidden opacity-0 group-hover:h-auto group-hover:opacity-100 transition-all duration-500 delay-75">
+                <p className="text-sm text-gray-100 mb-6 font-yekan line-clamp-3 leading-relaxed">
+                  {service.excerpt ||
+                    service.subtitle ||
+                    "برای مشاهده جزئیات بیشتر کلیک کنید."}
+                </p>
+
+                <div className="flex justify-end mb-2">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 text-white text-sm font-bold rounded-xl shadow-md border border-[#fff0] hover:bg-service-bg hover:shadow-xs hover:shadow-[#ffffff7e] hover:border-[#ffffff69] transition-colors duration-100 font-yekan">
+                    مشاهده جزئیات
+                    <ArrowLeft className="w-4 h-4" />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      <div className="mt-16 text-center max-w-3xl mx-auto px-4">
+        <p className="text-lg lg:text-2xl text-gray-600 font-yekan leading-relaxed">
+          سلامت شما، اولویت ماست. بهترین‌ها را برایتان فراهم کرده‌ایم.
+        </p>
+      </div>
+
+      {/* View All Button */}
+      <div className="flex justify-center mt-16">
+        <Link href="/services">
+          <button className="px-10 py-3 cursor-pointer rounded-full bg-service-bg-2 text-white border border-white/20 font-bold hover:bg-service-bg transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 font-yekan flex items-center gap-3 active:scale-95">
+            مشاهده همه خدمات
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        </Link>
+      </div>
+    </div>
+  );
+}

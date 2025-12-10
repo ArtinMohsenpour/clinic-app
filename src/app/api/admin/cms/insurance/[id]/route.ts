@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { requireCmsAccess } from "../../_auth";
+import { revalidateTag } from "next/cache";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -107,6 +108,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
     },
   });
 
+  revalidateTag("home-insurances");
+
   return NextResponse.json({ ok: true });
 }
 
@@ -131,5 +134,6 @@ export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
     },
   });
 
+  revalidateTag("home-insurances");
   return NextResponse.json({ ok: true });
 }

@@ -45,7 +45,11 @@ export default function PageForm({
         .then((data: StaticPage & { contactItems: ContactItem[] }) => {
           setTitle(data.title);
           setSlug(data.slug);
-          setBody(data.body ? JSON.stringify(data.body, null, 2) : "");
+          if (typeof data.body === "string") {
+            setBody(data.body);
+          } else {
+            setBody(data.body ? JSON.stringify(data.body, null, 2) : "");
+          }
           setStatus(
             data.status === "DRAFT" ||
               data.status === "PUBLISHED" ||
@@ -100,7 +104,7 @@ export default function PageForm({
     const payload = {
       title,
       slug,
-      body: body ? JSON.parse(body) : null,
+      body: body || null,
       status,
       contactItems: contactItems.map(({ id, ...rest }) => ({
         ...(id.startsWith("temp-") ? {} : { id }), // Only include ID for existing items
@@ -171,8 +175,10 @@ export default function PageForm({
           value={body}
           onChange={(e) => setBody(e.target.value)}
           rows={10}
-          className="w-full rounded-xl border p-2 font-mono text-sm"
-          placeholder="JSON content for the page body..."
+          className="w-full rounded-xl border font-mono p-2 text-sm"
+          placeholder="محتوای صفحه را اینجا وارد کنید...
+          میتواند شامل متن ساده یا JSON برای محتوای غنی‌تر باشد."
+          dir="ltr"
         />
       </div>
 

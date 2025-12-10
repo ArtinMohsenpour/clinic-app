@@ -1,124 +1,143 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 
-const slides = [
-  {
-    id: 1,
-    image:
-      "https://images.pexels.com/photos/236380/pexels-photo-236380.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    title: "خدمات پیشرفته پزشکی",
-    subtitle: "سلامتی شما، اولویت ما",
-    description:
-      "با تیمی متعهد از متخصصان و تجهیزات مدرن، مراقبت‌های پزشکی در سطح جهانی را تجربه کنید.",
-    buttonText: "بیشتر بدانید",
-    buttonLink: "/about",
-  },
-  {
-    id: 2,
-    image:
-      "https://images.pexels.com/photos/1170979/pexels-photo-1170979.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    title: "خدمات جامع درمانی",
-    subtitle: "همه نیازهای پزشکی در یک مکان",
-    description:
-      "از چکاپ‌های دوره‌ای تا درمان‌های تخصصی، همه خدمات پزشکی مورد نیاز شما را ارائه می‌دهیم.",
-    buttonText: "مشاهده خدمات",
-    buttonLink: "/services",
-  },
-  {
-    id: 3,
-    image:
-      "https://images.pexels.com/photos/263402/pexels-photo-263402.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    title: "تیم متخصصان برجسته",
-    subtitle: "باور به سلامت شما",
-    description:
-      "تیمی از پزشکان و پرسنل حرفه‌ای برای ارائه بهترین مراقبت‌ها در کنار شما هستند.",
-    buttonText: "تماس با ما",
-    buttonLink: "/contact",
-  },
-];
+// Define the type for the slide data
+type HeroSlideData = {
+  id: string;
+  title: string;
+  description?: string | null;
+  callToActionText?: string | null;
+  callToActionUrl?: string | null;
+  image?: {
+    publicUrl: string | null;
+    alt?: string | null;
+  } | null;
+};
 
-export default function HeroSlider() {
-  const [currentSlide, setCurrentSlide] = useState(0);
+interface HeroSliderProps {
+  slides: HeroSlideData[];
+}
 
-  // Auto slide
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
+export default function HeroSlider({ slides }: HeroSliderProps) {
+  const [current, setCurrent] = useState(0);
 
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
+  // Auto-play functionality
+  // useEffect(() => {
+  //   if (slides.length <= 1) return;
+  //   const timer = setInterval(() => {
+  //     setCurrent((prev) => (prev + 1) % slides.length);
+  //   }, 6000); // Change slide every 6 seconds
+  //   return () => clearInterval(timer);
+  // }, [slides.length]);
+
+  if (!slides || slides.length === 0) {
+    return null;
+  }
+
+  const nextSlide = () => setCurrent((prev) => (prev + 1) % slides.length);
   const prevSlide = () =>
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    setCurrent((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
 
   return (
-    <section className="relative w-full h-[600px] overflow-hidden rounded-lg ">
+    <div
+      className="relative w-full h-[600px] sm:h-[700px] lg:h-[600px] overflow-hidden bg-gray-900 group font-yekan"
+      dir="rtl"
+    >
+      {/* Slides */}
       {slides.map((slide, index) => (
         <div
           key={slide.id}
-          className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-            index === currentSlide ? "opacity-100" : "opacity-0"
+          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+            index === current ? "opacity-100 z-10" : "opacity-0 z-0"
           }`}
         >
-          <div className="w-full h-full relative">
+          {/* Background Image */}
+          {slide.image?.publicUrl ? (
             <Image
-              src={slide.image}
-              alt={slide.title}
+              src={slide.image.publicUrl}
+              alt={slide.image.alt || slide.title}
               fill
-              priority
-              sizes="100vw"
-              quality={100}
-              className="object-cover"
+              className="object-cover opacity-50 lg:opacity-60 transition-transform duration-[10000ms] ease-linear transform scale-100 hover:scale-105"
+              priority={index === 0}
             />
-          </div>
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-start px-8 md:px-16">
-            <div className="max-w-2xl text-white">
-              <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                {slide.title}
-              </h2>
-              <p className="text-xl mb-4">{slide.subtitle}</p>
-              <p className="text-lg mb-6">{slide.description}</p>
-              <a
-                href={slide.buttonLink}
-                className="bg-[#00A390] hover:bg-[#00796b] text-white px-6 py-3 rounded-full font-semibold transition"
-              >
-                {slide.buttonText}
-              </a>
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-teal-900 to-slate-900 opacity-80" />
+          )}
+
+          {/* Content Overlay */}
+          <div className="absolute inset-0 flex items-center select-none ">
+            <div className="container mx-auto px-6 sm:px-12 lg:px-60">
+              <div className="max-w-fit flex flex-col items-start text-right px-5 py-5 backdrop-blur-[4px] shadow-lg  space-y-6 sm:space-y-8  rounded-3xl border-[1px] border-white/20">
+                {/* Title */}
+                <h2 className="text-4xl sm:text-5xl lg:text-5xl font-bold text-[#ffffff] leading-tight drop-shadow-xl animate-in fade-in slide-in-from-right-8 duration-700">
+                  {slide.title}
+                </h2>
+
+                {/* Description */}
+                {slide.description && (
+                  <p className="text-lg sm:text-xl lg:text-xl text-gray-100 leading-relaxed  drop-shadow-lg max-w-2xl animate-in fade-in slide-in-from-right-8 duration-700 delay-150 whitespace-pre-line">
+                    {slide.description}
+                  </p>
+                )}
+
+                {/* Button */}
+                {slide.callToActionText && slide.callToActionUrl && (
+                  <div className="pt-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+                    <Link
+                      href={slide.callToActionUrl}
+                      className="backdrop-blur-[12px] inline-flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 hover:bg-white/10 text-white border-2 border-[#ffffff51] rounded-xl text-lg sm:text-xl font-bold shadow-gray-900 active:scale-95"
+                    >
+                      {slide.callToActionText}
+                      <ChevronLeft className="w-5 h-5 mr-2" />
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       ))}
 
-      {/* Navigation Arrows */}
-      <button
-        onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/50 text-[#00A390] p-3 rounded-full transition z-10"
-      >
-        <ChevronLeft className="w-6 h-6" />
-      </button>
-      <button
-        onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/50 text-[#00A390] p-3 rounded-full transition z-10"
-      >
-        <ChevronRight className="w-6 h-6" />
-      </button>
-
-      {/* Dots */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-3">
-        {slides.map((_, index) => (
+      {/* Controls (Only if multiple slides) */}
+      {slides.length > 1 && (
+        <>
+          {/* Desktop/Tablet Arrows */}
           <button
-            key={index}
-            onClick={() => setCurrentSlide(index)}
-            className={`w-3 h-3 rounded-full transition-all ${
-              index === currentSlide ? "bg-[#00A390] scale-110" : "bg-white/50"
-            }`}
-          />
-        ))}
-      </div>
-    </section>
+            onClick={nextSlide}
+            className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 z-30 w-14 h-14 items-center justify-center bg-white/10 hover:bg-white/20 text-white rounded-full border border-white/20 backdrop-blur-sm transition-all transform hover:scale-110 active:scale-95"
+            aria-label="Next Slide"
+          >
+            <ChevronLeft className="w-8 h-8" />
+          </button>
+          <button
+            onClick={prevSlide}
+            className="hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 z-30 w-14 h-14 items-center justify-center bg-white/10 hover:bg-white/20 text-white rounded-full border border-white/20 backdrop-blur-sm transition-all transform hover:scale-110 active:scale-95"
+            aria-label="Previous Slide"
+          >
+            <ChevronRight className="w-8 h-8" />
+          </button>
+
+          {/* Indicators (All Screens) */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex gap-3">
+            {slides.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrent(idx)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  idx === current
+                    ? "bg-navbar-secondary w-12"
+                    : "bg-white/40 hover:bg-white/70 w-6"
+                }`}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
