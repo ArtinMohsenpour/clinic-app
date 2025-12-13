@@ -223,8 +223,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
       }
     });
 
-     revalidateTag("home-services");
-
     await prisma.auditLog.create({
       data: {
         actorId: session.user.id,
@@ -233,7 +231,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
         meta: { status: body.status },
       },
     });
-
+    revalidateTag("home-services");
     revalidateTag("services");
     return NextResponse.json({ ok: true });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

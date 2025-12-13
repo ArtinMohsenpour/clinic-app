@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { STAFF_MANAGEMENT_ALLOWED_ROLES } from "@/config/constants/rbac";
 import { randomUUID } from "node:crypto";
+import {revalidateTag} from "next/cache";
 
 type IdParam = { id: string };
 
@@ -210,6 +211,7 @@ export async function PUT(req: Request, ctx: { params: Promise<IdParam> }) {
       });
     }
   });
+  revalidateTag("staff")
 
   return NextResponse.json({ ok: true });
 }
@@ -313,6 +315,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
   }
 
   await prisma.user.delete({ where: { id } });
+  revalidateTag("staff");
   return NextResponse.json({ ok: true });
 }
 

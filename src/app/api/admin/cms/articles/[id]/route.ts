@@ -209,6 +209,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
   }
 
   revalidateTag("home-articles");
+  revalidateTag("articles");
 
   return NextResponse.json({ ok: true });
 }
@@ -232,6 +233,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
       });
     } catch {}
     revalidateTag("home-articles");
+    revalidateTag("articles");
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "delete_failed" }, { status: 400 });

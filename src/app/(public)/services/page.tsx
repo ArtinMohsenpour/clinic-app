@@ -41,7 +41,7 @@ export default async function ServicesPage() {
               <Link
                 key={service.id}
                 href={`/services/${service.slug}`}
-                className="group relative block rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500"
+                className="group relative block rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500"
               >
                 {/* Image */}
                 <div className="relative bg-gray-100 aspect-[4/3]">

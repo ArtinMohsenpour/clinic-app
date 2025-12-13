@@ -50,7 +50,7 @@ export default async function ArticlesPage() {
               <Link
                 key={article.id}
                 href={`/articles/${article.slug}`}
-                className="group relative block rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 bg-white ring-1 ring-gray-200/70"
+                className="group relative block rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 bg-white ring-1 ring-gray-200/70"
               >
                 {/* Image */}
                 <div className="relative bg-gray-100 aspect-[4/3]">
