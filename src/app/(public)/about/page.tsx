@@ -1,4 +1,5 @@
 import { getAboutPageData } from "@/lib/data/about";
+import RichTextRenderer from "@/components/common/RichTextRenderer";
 import {
   Building2,
   Heart,
@@ -13,35 +14,7 @@ export const metadata = {
   description: "آشنایی با تاریخچه، ماموریت و ارزش‌های کلینیک عصر سلامت.",
 };
 
-// --- Helper to render rich text from CMS ---
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function RichTextRenderer({ content }: { content: any }) {
-  if (!content) return null;
-
-  // Case 1: Content is a direct HTML string inside JSON
-  if (typeof content === "string") {
-    return (
-      <div
-        className="prose prose-lg prose-slate mx-auto text-justify leading-8 text-gray-600"
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
-    );
-  }
-
-  // Case 2: Content is an object (e.g. Tiptap/EditorJS)
-  if (typeof content === "object" && content?.html) {
-    return (
-      <div
-        className="prose prose-lg prose-slate mx-auto text-justify leading-8 text-gray-600"
-        dangerouslySetInnerHTML={{ __html: content.html }}
-      />
-    );
-  }
-
-  return (
-    <div className="text-gray-600 text-center">{JSON.stringify(content)}</div>
-  );
-}
+// RichTextRenderer moved to a shared helper and imported above.
 
 export default async function AboutPage() {
   const pageData = await getAboutPageData();

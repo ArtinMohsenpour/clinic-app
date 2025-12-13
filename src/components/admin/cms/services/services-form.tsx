@@ -27,7 +27,7 @@ export type ServiceDTO = {
   gallery?: Array<{ mediaId: string; order?: number }>;
 };
 
-const BODY_WORD_MAX = 3000;
+const BODY_WORD_MAX = 5000;
 const COVER_ALLOWED = ["image/jpeg", "image/png", "image/webp"];
 const COVER_MAX_SIZE = 6 * 1024 * 1024;
 

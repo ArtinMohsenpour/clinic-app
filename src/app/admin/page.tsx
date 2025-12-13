@@ -340,11 +340,11 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Right: Stats Row */}
-                        <div className="flex items-center gap-4 pl-1">
+                        <div className="flex items-center  pl-1">
                           {/* Active / Published */}
                           {(stats?.published ?? 0) > 0 && (
                             <div className="flex flex-col items-center">
-                              <span className="text-lg font-black text-emerald-600 leading-none bg-cms-secondary/10 p-2 rounded">
+                              <span className="text-base font-black text-emerald-600 leading-none bg-cms-secondary/10 p-2 rounded">
                                 {stats?.published?.toLocaleString("fa-IR")}
                               </span>
                               <span className="text-[9px] text-gray-400 font-medium mt-1">
