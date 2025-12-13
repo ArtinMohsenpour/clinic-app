@@ -17,7 +17,7 @@ export default async function PatientIntakePage() {
           <div className="absolute inset-y-0 right-1/2 -z-10 mr-16 w-[200%] origin-bottom-left skew-x-[-30deg] shadow-xl shadow-cms-primary/10 ring-1 ring-indigo-50 sm:mr-28 lg:mr-0 xl:mr-16 xl:origin-center" />
 
           <div className="mx-auto max-w-2xl text-center">
-            <h1 className="mt-2 text-4xl font-bold tracking-tight bg-gradient-to-l from-cms-primary to-indigo-600 bg-clip-text text-transparent sm:text-6xl">
+            <h1 className="mt-2 text-4xl font-bold tracking-tight bg-gradient-to-l pb-3 from-cms-primary to-indigo-600 bg-clip-text text-transparent sm:text-6xl">
               {pageData?.title || "راهنمای پذیرش"}
             </h1>
             <p className="mt-4 text-lg text-gray-600">
