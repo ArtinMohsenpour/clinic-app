@@ -9,7 +9,7 @@ import { useState, useEffect } from "react";
 
 const MENU_ITEMS = [
   { title: "خدمات", href: "/services" },
-  { title: "نحوه پذیرش", href: "/reception" },
+  { title: "نحوه پذیرش", href: "/patient-intake" },
   { title: "مقالات", href: "/articles" },
   { title: "شعبه‌ها", href: "/branches" },
   { title: "پرسنل", href: "/staff" },
