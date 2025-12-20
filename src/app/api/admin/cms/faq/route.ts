@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { STAFF_MANAGEMENT_ALLOWED_ROLES } from "@/config/constants/rbac";
+import { revalidateTag } from "next/cache";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -199,6 +200,8 @@ export async function POST(req: Request) {
       meta: { slug: created.slug, status: created.status },
     },
   });
+
+  revalidateTag("faq");
 
   return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
 }

@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { CareerStatus } from "@prisma/client";
 import { requireCmsAccess } from "../_auth";
+import { revalidateTag } from "next/cache";
 
 // Force dynamic to ensure auth checks happen on every request
 export const dynamic = "force-dynamic";
@@ -132,6 +133,8 @@ export async function POST(req: Request) {
       meta: { title: body.title, status: body.status },
     },
   });
+
+  revalidateTag("careers");
 
   return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
 }

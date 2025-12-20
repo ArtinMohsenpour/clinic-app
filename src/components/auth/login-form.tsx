@@ -91,7 +91,7 @@ export function LoginForm() {
   const submitDisabled = isLoading || !form.email || !form.password;
 
   return (
-    <div className="flex items-start justify-center pt-16 select-none">
+    <div className="flex items-start justify-center pt-16 select-none min-h-dvh bg-background-2">
       <div className="bg-white shadow-lg rounded-lg w-full max-w-md p-8">
         <h1 className="text-3xl font-bold text-center mb-6 text-navbar-primary">
           ورود به پنل مدیریت

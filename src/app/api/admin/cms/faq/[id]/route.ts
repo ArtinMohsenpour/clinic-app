@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { STAFF_MANAGEMENT_ALLOWED_ROLES } from "@/config/constants/rbac";
+import { revalidateTag } from "next/cache";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -194,6 +195,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
     },
   });
 
+  revalidateTag("faq");
+
   return NextResponse.json({ ok: true });
 }
 
@@ -207,6 +210,8 @@ export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
   await prisma.auditLog.create({
     data: { actorId: session.user.id, action: "CMS_FAQ_DELETE", targetId: id },
   });
+
+  revalidateTag("faq");
 
   return NextResponse.json({ ok: true });
 }

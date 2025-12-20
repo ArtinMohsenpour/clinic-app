@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { STAFF_MANAGEMENT_ALLOWED_ROLES } from "@/config/constants/rbac";
+import { revalidateTag } from "next/cache";
 
 type IdParam = { id: string };
 
@@ -121,6 +122,7 @@ export async function GET(_req: Request, ctx: { params: Promise<IdParam> }) {
       },
     },
   });
+  revalidateTag("forms");
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(row);
 }
@@ -227,6 +229,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
       meta: { slug: body.slug, status: body.status },
     },
   });
+  revalidateTag("forms");
 
   return NextResponse.json({ ok: true });
 }
@@ -242,5 +245,6 @@ export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
     data: { actorId: session.user.id, action: "CMS_FORM_DELETE", targetId: id },
   });
 
+  revalidateTag("forms");
   return NextResponse.json({ ok: true });
 }
