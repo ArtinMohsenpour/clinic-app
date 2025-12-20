@@ -98,7 +98,7 @@ export const getHomeBranches = unstable_cache(
 export const getHomeInsurances = unstable_cache(
   async () => {
     return prisma.insuranceCompany.findMany({
-      take: 4,
+      take: 3,
       where: { status: "PUBLISHED" },
       orderBy: { createdAt: "desc" },
       include: {

@@ -82,14 +82,23 @@ export default async function Footer() {
               <span className="w-1 h-6 bg-service-bg rounded-full"></span>
               دسترسی سریع
             </h3>
-            <ul className="grid grid-cols-2 gap-4">
+            <ul className="grid grid-cols-2 gap-x-4 gap-y-3">
               <FooterLink href="/" label="صفحه اصلی" />
               <FooterLink href="/about" label="درباره ما" />
+
               <FooterLink href="/services" label="خدمات ما" />
+              <FooterLink href="/forms" label="فرم‌ها و مدارک" />
+
               <FooterLink href="/articles" label="مقالات و اخبار" />
+              <FooterLink href="/education" label="آموزش بیماران" />
+
               <FooterLink href="/branches" label="شعب ما" />
-              <FooterLink href="/insurances" label="بیمه های طرف قرارداد" />
-              <FooterLink href="/staff" label="کارکنان" />
+              <FooterLink href="/insurances" label="بیمه‌های طرف قرارداد" />
+
+              <FooterLink href="/staff" label="پزشکان و پرسنل" />
+              <FooterLink href="/jobs" label="فرصت‌های شغلی" />
+
+              <FooterLink href="/faq" label="سوالات متداول" />
               <FooterLink href="/contact" label="تماس با ما" />
             </ul>
           </div>

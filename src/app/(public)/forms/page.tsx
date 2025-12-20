@@ -8,7 +8,6 @@ import {
   Search,
   FileType,
   Calendar,
-  ShieldCheck,
   Info,
   Paperclip,
   FileDown,
@@ -16,7 +15,6 @@ import {
   FileArchive,
   Image as ImageIcon,
   Languages,
-  Layers,
 } from "lucide-react";
 
 export const metadata = {
@@ -150,11 +148,6 @@ export default async function FormsPage() {
                       <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold border-r border-slate-100 pr-3 mr-1">
                         <Calendar size={12} />
                         {new Date(form.createdAt).toLocaleDateString("fa-IR")}
-                      </div>
-
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold border-r border-slate-100 pr-3 mr-1">
-                        <Download size={12} />
-                        {form.downloads || 0} دریافت
                       </div>
                     </div>
 
