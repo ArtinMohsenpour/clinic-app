@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getArticleSlugs } from "@/lib/data/articles";
 import { getServiceSlugs } from "@/lib/data/services";
+import { getBranchSlugs } from "@/lib/data/branches";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://asr-salamat.ir";
@@ -11,6 +12,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/",
     "/about",
     "/services",
+    "/branches",
+    "/staff",
     "/privacy",
     "/imprint",
     "/articles",
@@ -24,9 +27,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // Dynamic content
-  const [articleSlugs, serviceSlugs] = await Promise.all([
+  const [articleSlugs, serviceSlugs, branchSlugs] = await Promise.all([
     getArticleSlugs(),
     getServiceSlugs(),
+    getBranchSlugs(),
   ]);
 
   const articleEntries: MetadataRoute.Sitemap = articleSlugs.map((slug) => ({
@@ -43,5 +47,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticEntries, ...articleEntries, ...serviceEntries];
+  const branchEntries: MetadataRoute.Sitemap = branchSlugs.map((key) => ({
+    url: `${baseUrl}/branches/${key}`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
+
+  return [...staticEntries, ...articleEntries, ...serviceEntries, ...branchEntries];
 }

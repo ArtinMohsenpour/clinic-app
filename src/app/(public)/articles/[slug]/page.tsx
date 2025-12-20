@@ -67,7 +67,7 @@ export default async function ArticleDetailsPage({ params }: { params: { slug: s
       {/* Hero with Cover */}
       <div className="relative isolate overflow-hidden">
         <div className="relative mx-auto max-w-7xl px-6 md:px-10 pb-8 pt-4">
-          <div className="relative -mx-6 sm:mx-0 overflow-hidden sm:rounded-2xl sm:ring-1 sm:ring-gray-200/70 sm:shadow-sm">
+          <div className="relative -mx-6 sm:mx-0 overflow-hidden sm:rounded-xl sm:ring-1 sm:ring-gray-200/70 sm:shadow-sm">
             {/* Cover */}
             <div className="relative bg-gray-100 aspect-[16/9]">
               {article.cover?.publicUrl ? (
@@ -136,7 +136,7 @@ export default async function ArticleDetailsPage({ params }: { params: { slug: s
       {/* Content */}
       <div className="mx-auto max-w-7xl px-6 md:px-10 pb-24">
         {/* Main body (rich text) */}
-        <div className="rounded-3xl bg-white/70 backdrop-blur p-6 sm:p-8 ring-1 ring-gray-200/70 shadow-sm">
+        <div className="rounded-2xl bg-white/70 backdrop-blur p-6 sm:p-8 ring-1 ring-gray-200/70 shadow-sm">
           {article.body ? (
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             <RichTextRenderer content={(article as any).body} />
@@ -153,7 +153,7 @@ export default async function ArticleDetailsPage({ params }: { params: { slug: s
             <h3 className="text-lg font-bold text-gray-900 mb-4 font-yekan">گالری تصاویر</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {gallery.slice(0, 9).map((img, idx) => (
-                <div key={idx} className="group relative aspect-[4/3] overflow-hidden rounded-2xl ring-1 ring-gray-200/70">
+                <div key={idx} className="group relative aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-gray-200/70">
                   {img.publicUrl ? (
                     <Image src={img.publicUrl} alt={img.alt || article.title} fill className="object-cover object-center transition-transform duration-500 group-hover:scale-105" />
                   ) : (

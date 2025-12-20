@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { randomUUID } from "node:crypto";
 import { auth } from "@/lib/auth";
 import { STAFF_MANAGEMENT_ALLOWED_ROLES } from "@/config/constants/rbac";
+import {revalidateTag} from "next/cache";
 
 /** Require an authenticated user with a staff-management role */
 async function assertAdmin(req: Request) {
@@ -218,6 +219,8 @@ export async function POST(req: Request) {
         select: { id: true },
       });
     });
+
+    revalidateTag("staff")
 
     return NextResponse.json({ ok: true, id: created?.id }, { status: 201 });
   } catch (err) {

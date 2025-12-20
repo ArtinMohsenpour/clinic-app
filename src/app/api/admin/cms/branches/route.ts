@@ -192,7 +192,7 @@ export async function POST(req: Request) {
     });
 
     revalidateTag("home-branches");
-
+    revalidateTag("branches");
     revalidateTag("branch-cms");
     return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
   } catch (e: any) {

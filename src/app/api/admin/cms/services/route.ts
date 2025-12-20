@@ -202,6 +202,7 @@ export async function POST(req: Request) {
     });
 
     revalidateTag("home-services");
+    revalidateTag("services");
 
     await prisma.auditLog.create({
       data: {
