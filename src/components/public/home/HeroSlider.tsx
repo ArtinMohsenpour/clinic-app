@@ -61,7 +61,7 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
               src={slide.image.publicUrl}
               alt={slide.image.alt || slide.title}
               fill
-              className="object-cover opacity-50 lg:opacity-60 transition-transform duration-[10000ms] ease-linear transform scale-100 hover:scale-105"
+              className="object-cover opacity-70 lg:opacity-90 transition-transform duration-[10000ms] ease-linear transform "
               priority={index === 0}
             />
           ) : (
@@ -71,7 +71,7 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
           {/* Content Overlay */}
           <div className="absolute inset-0 flex items-center select-none ">
             <div className="container mx-auto px-6 sm:px-12 lg:px-60">
-              <div className="max-w-fit flex flex-col items-start text-right px-5 py-5 backdrop-blur-[4px] shadow-lg  space-y-6 sm:space-y-8  rounded-3xl border-[1px] border-white/20">
+              <div className="backdrop-blur-[2px] max-w-fit flex flex-col items-start bg-black/20 text-right px-5 py-5 shadow-black/40 shadow-lg  space-y-6 sm:space-y-8  rounded-3xl border-[1px] border-white/30">
                 {/* Title */}
                 <h2 className="text-4xl sm:text-5xl lg:text-5xl font-bold text-[#ffffff] leading-tight drop-shadow-xl animate-in fade-in slide-in-from-right-8 duration-700">
                   {slide.title}
