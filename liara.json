@@ -1,0 +1,12 @@
+{
+  "port": 3000,
+  "next": {
+    "mirror": true
+  },
+  "disks": [
+    {
+      "name": "uploads",
+      "mountTo": "/app/public/uploads"
+    }
+  ]
+}
