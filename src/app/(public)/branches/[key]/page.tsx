@@ -1,20 +1,41 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { MapPin, Phone, Mail, Clock as ClockIcon, ExternalLink } from "lucide-react";
+import {
+  MapPin,
+  Phone,
+  Mail,
+  Clock as ClockIcon,
+  ExternalLink,
+} from "lucide-react";
 import { getBranchByKey, getBranchSlugs } from "@/lib/data/branches";
 import RichTextRenderer from "@/components/common/RichTextRenderer";
 
 // Metadata per branch
-export async function generateMetadata({ params }: { params: { key: string } }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: { key: string };
+}) {
   const branch = await getBranchByKey(params.key);
-  if (!branch || !branch.isActive || !branch.cms || branch.cms.status !== "PUBLISHED") {
+  if (
+    !branch ||
+    !branch.isActive ||
+    !branch.cms ||
+    branch.cms.status !== "PUBLISHED"
+  ) {
     return { title: "شعبه یافت نشد" } as const;
   }
 
-  const title = branch.cms.title || `${branch.name} ${branch.city ? `| ${branch.city}` : ""}`;
-  const description = branch.cms.subtitle || branch.cms.publicAddress || undefined;
-  const images = branch.cms.hero?.publicUrl ? [branch.cms.hero.publicUrl] : undefined;
+  const title =
+    branch.cms.title ||
+    `${branch.name} ${branch.city ? `| ${branch.city}` : ""}`;
+  const description =
+    branch.cms.subtitle || branch.cms.publicAddress || undefined;
+  const images = branch.cms.hero?.publicUrl
+    ? [branch.cms.hero.publicUrl]
+    : undefined;
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://asr-salamat.ir";
   const canonical = `${baseUrl}/branches/${branch.key}`;
 
@@ -47,16 +68,27 @@ export async function generateStaticParams() {
   return keys.map((key) => ({ key }));
 }
 
-export default async function BranchDetailsPage({ params }: { params: { key: string } }) {
+export default async function BranchDetailsPage({
+  params,
+}: {
+  params: { key: string };
+}) {
   const branch = await getBranchByKey(params.key);
-  if (!branch || !branch.isActive || !branch.cms || branch.cms.status !== "PUBLISHED") return notFound();
+  if (
+    !branch ||
+    !branch.isActive ||
+    !branch.cms ||
+    branch.cms.status !== "PUBLISHED"
+  )
+    return notFound();
 
   const gallery = (branch.cms.media || [])
     .map((m) => m.media)
     .filter(Boolean) as { publicUrl: string | null; alt: string | null }[];
 
   // Opening hours can be an array of {day, open, close}
-  const opening: Array<{ day?: string; open?: string; close?: string }> = (branch.cms.openingHours as any) || [];
+  const opening: Array<{ day?: string; open?: string; close?: string }> =
+    (branch.cms.openingHours as any) || [];
 
   return (
     <div className="bg-background-2" dir="rtl">
@@ -103,7 +135,9 @@ export default async function BranchDetailsPage({ params }: { params: { key: str
                 {branch.cms.title || branch.name}
               </h1>
               {(branch.cms.subtitle || branch.city) && (
-                <p className="mt-2 text-gray-600 font-yekan">شهر {branch.cms.subtitle || branch.city}  </p>
+                <p className="mt-2 text-gray-600 font-yekan">
+                  شهر {branch.cms.subtitle || branch.city}{" "}
+                </p>
               )}
             </div>
           </div>
@@ -121,7 +155,9 @@ export default async function BranchDetailsPage({ params }: { params: { key: str
                   <MapPin className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[12px] text-gray-500 font-yekan mb-1">آدرس</div>
+                  <div className="text-[12px] text-gray-500 font-yekan mb-1">
+                    آدرس
+                  </div>
                   <div className="text-sm text-gray-900 font-yekan">
                     {branch.cms.publicAddress}
                   </div>
@@ -148,7 +184,9 @@ export default async function BranchDetailsPage({ params }: { params: { key: str
                   <Phone className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[12px] text-gray-500 font-yekan mb-1">تلفن تماس</div>
+                  <div className="text-[12px] text-gray-500 font-yekan mb-1">
+                    تلفن تماس
+                  </div>
                   <div className="text-sm text-gray-900 font-yekan ltr">
                     {branch.cms.phonePrimary}
                   </div>
@@ -172,7 +210,9 @@ export default async function BranchDetailsPage({ params }: { params: { key: str
                   <Mail className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[12px] text-gray-500 font-yekan mb-1">ایمیل</div>
+                  <div className="text-[12px] text-gray-500 font-yekan mb-1">
+                    ایمیل
+                  </div>
                   {/* Email should use English font and LTR direction */}
                   <div className="text-sm text-gray-900 font-sans ltr">
                     {branch.cms.emailPublic}
@@ -196,7 +236,9 @@ export default async function BranchDetailsPage({ params }: { params: { key: str
           {branch.cms.body ? (
             <RichTextRenderer content={branch.cms.body as any} />
           ) : (
-            <p className="text-gray-500 font-yekan text-center">اطلاعات این شعبه به‌زودی تکمیل خواهد شد.</p>
+            <p className="text-gray-500 font-yekan text-center">
+              اطلاعات این شعبه به‌زودی تکمیل خواهد شد.
+            </p>
           )}
         </div>
 
@@ -208,9 +250,14 @@ export default async function BranchDetailsPage({ params }: { params: { key: str
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {opening.map((row, i) => (
-                <div key={i} className="rounded-xl bg-white/70 ring-1 ring-gray-200/70 px-4 py-3 font-yekan text-sm text-gray-800 flex items-center justify-between">
+                <div
+                  key={i}
+                  className="rounded-xl bg-white/70 ring-1 ring-gray-200/70 px-4 py-3 font-yekan text-sm text-gray-800 flex items-center justify-between"
+                >
                   <span className="text-gray-600">{row.day || ""}</span>
-                  <span className="font-bold">{row.open || "—"} تا {row.close || "—"}</span>
+                  <span className="font-bold">
+                    {row.open || "—"} تا {row.close || "—"}
+                  </span>
                 </div>
               ))}
             </div>
@@ -220,12 +267,22 @@ export default async function BranchDetailsPage({ params }: { params: { key: str
         {/* Gallery */}
         {gallery.length > 0 && (
           <div className="mt-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 font-yekan">گالری تصاویر شعبه</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4 font-yekan">
+              گالری تصاویر شعبه
+            </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {gallery.slice(0, 9).map((img, idx) => (
-                <div key={idx} className="group relative aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-gray-200/70">
+                <div
+                  key={idx}
+                  className="group relative aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-gray-200/70"
+                >
                   {img.publicUrl ? (
-                    <Image src={img.publicUrl} alt={img.alt || branch.name} fill className="object-cover object-center transition-transform duration-500 group-hover:scale-105" />
+                    <Image
+                      src={img.publicUrl}
+                      alt={img.alt || branch.name}
+                      fill
+                      className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                    />
                   ) : (
                     <div className="w-full h-full bg-gray-100" />
                   )}
