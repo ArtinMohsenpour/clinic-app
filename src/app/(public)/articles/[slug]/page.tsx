@@ -6,13 +6,23 @@ import { getArticleBySlug, getArticleSlugs } from "@/lib/data/articles";
 import RichTextRenderer from "@/components/common/RichTextRenderer";
 
 // Metadata per article
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const article = await getArticleBySlug(params.slug);
-  if (!article || article.status !== "PUBLISHED") return { title: "مقاله یافت نشد" } as const;
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params; // اضافه کردن await
+  const article = await getArticleBySlug(slug);
+
+  if (!article || article.status !== "PUBLISHED")
+    return { title: "مقاله یافت نشد" } as const;
 
   const title = (article as any).seoTitle || article.title;
-  const description = (article as any).seoDescription || article.excerpt || undefined;
-  const images = article.cover?.publicUrl ? [article.cover.publicUrl] : undefined;
+  const description =
+    (article as any).seoDescription || article.excerpt || undefined;
+  const images = article.cover?.publicUrl
+    ? [article.cover.publicUrl]
+    : undefined;
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://asr-salamat.ir";
   const canonical = `${baseUrl}/articles/${article.slug}`;
 
@@ -45,8 +55,14 @@ export async function generateStaticParams() {
   return slugs.map((slug) => ({ slug }));
 }
 
-export default async function ArticleDetailsPage({ params }: { params: { slug: string } }) {
-  const article = await getArticleBySlug(params.slug);
+export default async function ArticleDetailsPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params; // اضافه کردن await
+  const article = await getArticleBySlug(slug);
+
   if (!article || article.status !== "PUBLISHED") return notFound();
 
   const gallery = (article.media || [])
@@ -150,12 +166,22 @@ export default async function ArticleDetailsPage({ params }: { params: { slug: s
         {/* Gallery */}
         {gallery.length > 0 && (
           <div className="mt-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 font-yekan">گالری تصاویر</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4 font-yekan">
+              گالری تصاویر
+            </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {gallery.slice(0, 9).map((img, idx) => (
-                <div key={idx} className="group relative aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-gray-200/70">
+                <div
+                  key={idx}
+                  className="group relative aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-gray-200/70"
+                >
                   {img.publicUrl ? (
-                    <Image src={img.publicUrl} alt={img.alt || article.title} fill className="object-cover object-center transition-transform duration-500 group-hover:scale-105" />
+                    <Image
+                      src={img.publicUrl}
+                      alt={img.alt || article.title}
+                      fill
+                      className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                    />
                   ) : (
                     <div className="w-full h-full bg-gray-100" />
                   )}
