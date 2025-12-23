@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { revalidateTag } from "next/cache";
@@ -14,16 +15,16 @@ const roleSchema = z.object({
 
 export async function PATCH(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // تغییر به Promise
 ) {
+  const { id } = await params; // استخراج id با استفاده از await
   const body = await _req.json();
   const parsed = roleSchema.safeParse(body);
   if (!parsed.success)
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
 
   try {
-    await prisma.role.update({ where: { id: params.id }, data: parsed.data });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await prisma.role.update({ where: { id: id }, data: parsed.data });
   } catch (e: any) {
     if (e?.code === "P2002") {
       return NextResponse.json(
@@ -43,9 +44,9 @@ export async function PATCH(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // تغییر به Promise
 ) {
-  const id = params.id;
+  const { id } = await params; // استخراج id با استفاده از await
 
   // prevent deleting a role that has assignments
   const count = await prisma.userRole.count({ where: { roleId: id } });
@@ -58,7 +59,6 @@ export async function DELETE(
 
   try {
     await prisma.role.delete({ where: { id } });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     if (e?.code === "P2025") {
       return NextResponse.json({ error: "نقش یافت نشد" }, { status: 404 });

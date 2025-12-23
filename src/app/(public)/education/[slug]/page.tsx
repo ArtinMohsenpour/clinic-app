@@ -8,12 +8,13 @@ import Link from "next/link";
 export default async function EducationDetail({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const post = await getEducationBySlug(params.slug);
+  // دریافت مقدار slug با استفاده از await
+  const { slug } = await params;
+  const post = await getEducationBySlug(slug);
 
   if (!post || post.status !== "PUBLISHED") notFound();
-
   return (
     <div className="bg-background-2 min-h-screen pb-24">
       <div className="mx-auto max-w-4xl ms:px-6 pt-16">

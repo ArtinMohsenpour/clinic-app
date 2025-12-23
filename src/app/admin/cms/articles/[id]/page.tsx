@@ -1,11 +1,19 @@
+/* eslint-disable */
 import ArticleForm from "@/components/admin/cms/articles/articles-form";
-
 import CmsBreadcrumbs from "@/components/admin/cms/ui/cms-bread-crumbs";
 import { prisma } from "@/lib/prisma";
 
-export default async function Page({ params }: { params: { id: string } }) {
+// نوع params را به Promise تغییر می‌دهیم
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  // مقدار id را با await استخراج می‌کنیم
+  const { id } = await params;
+
   const a = await prisma.article.findUnique({
-    where: { id: params.id },
+    where: { id: id },
     select: { title: true, slug: true },
   });
 
@@ -20,7 +28,8 @@ export default async function Page({ params }: { params: { id: string } }) {
         backHref="/admin/cms/articles"
       />
 
-      <ArticleForm mode="edit" articleId={params.id} />
+      {/* از id استخراج شده استفاده می‌کنیم */}
+      <ArticleForm mode="edit" articleId={id} />
     </div>
   );
 }

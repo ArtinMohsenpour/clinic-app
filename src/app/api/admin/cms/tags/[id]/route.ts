@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -40,8 +41,9 @@ async function gate(req: Request) {
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // تغییر به Promise
 ) {
+  const { id } = await params; // استخراج id با await
   const g = await gate(req);
   if ("error" in g) return g.error;
 
@@ -51,9 +53,8 @@ export async function PATCH(
     return NextResponse.json({ error: "invalid_body" }, { status: 400 });
 
   try {
-    await prisma.tag.update({ where: { id: params.id }, data: parsed.data });
+    await prisma.tag.update({ where: { id: id }, data: parsed.data });
     return NextResponse.json({ ok: true });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     if (e?.code === "P2002")
       return NextResponse.json(
@@ -68,19 +69,18 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // تغییر به Promise
 ) {
+  const { id } = await params; // استخراج id با await
   const g = await gate(req);
   if ("error" in g) return g.error;
 
-  // Optional: prevent delete if used
-  const inUse = await prisma.articleTag.count({ where: { tagId: params.id } });
+  const inUse = await prisma.articleTag.count({ where: { tagId: id } });
   if (inUse > 0) return NextResponse.json({ error: "in_use" }, { status: 409 });
 
   try {
-    await prisma.tag.delete({ where: { id: params.id } });
+    await prisma.tag.delete({ where: { id: id } });
     return NextResponse.json({ ok: true });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     if (e?.code === "P2025")
       return NextResponse.json({ error: "not_found" }, { status: 404 });

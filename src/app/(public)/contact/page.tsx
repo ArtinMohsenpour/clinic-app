@@ -1,6 +1,6 @@
 import { getContactUsPageData } from "@/lib/data/contact-us";
 import RichTextRenderer from "@/components/common/RichTextRenderer";
-import { Phone, Mail, MapPin, Clock, MessageCircle } from "lucide-react";
+import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
 import { notFound } from "next/navigation";
 
 export const metadata = {

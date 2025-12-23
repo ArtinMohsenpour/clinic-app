@@ -16,9 +16,11 @@ import RichTextRenderer from "@/components/common/RichTextRenderer";
 export async function generateMetadata({
   params,
 }: {
-  params: { key: string };
+  params: Promise<{ key: string }>;
 }) {
-  const branch = await getBranchByKey(params.key);
+  const { key } = await params;
+  const branch = await getBranchByKey(key);
+
   if (
     !branch ||
     !branch.isActive ||
@@ -42,27 +44,12 @@ export async function generateMetadata({
   return {
     title,
     description,
-    alternates: {
-      canonical,
-      languages: { "fa-IR": canonical },
-    },
-    openGraph: {
-      title,
-      description,
-      images,
-      type: "website",
-      url: canonical,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images,
-    },
+    alternates: { canonical, languages: { "fa-IR": canonical } },
+    openGraph: { title, description, images, type: "website", url: canonical },
+    twitter: { card: "summary_large_image", title, description, images },
   } as const;
 }
 
-// Pre-render all active branch keys
 export async function generateStaticParams() {
   const keys = await getBranchSlugs();
   return keys.map((key) => ({ key }));
@@ -71,9 +58,11 @@ export async function generateStaticParams() {
 export default async function BranchDetailsPage({
   params,
 }: {
-  params: { key: string };
+  params: Promise<{ key: string }>;
 }) {
-  const branch = await getBranchByKey(params.key);
+  const { key } = await params;
+  const branch = await getBranchByKey(key);
+
   if (
     !branch ||
     !branch.isActive ||

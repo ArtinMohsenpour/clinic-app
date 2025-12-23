@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { requireCmsAccess } from "../../cms/_auth";
 import { z } from "zod";
 
-type Context = { params: { id: string } };
+// در Next.js 15 پارامتر params به صورت Promise است
+type Context = { params: Promise<{ id: string }> };
 
 const PatchSchema = z.object({
   name: z
@@ -28,7 +29,9 @@ const PatchSchema = z.object({
 export async function PATCH(req: Request, { params }: Context) {
   const gate = await requireCmsAccess(req);
   if ("error" in gate) return gate.error;
-  const { id } = params;
+  
+  // استخراج id با استفاده از await
+  const { id } = await params;
 
   const json = await req.json();
   const parsed = PatchSchema.safeParse(json);
@@ -77,7 +80,9 @@ export async function PATCH(req: Request, { params }: Context) {
 export async function DELETE(req: Request, { params }: Context) {
   const gate = await requireCmsAccess(req);
   if ("error" in gate) return gate.error;
-  const { id } = params;
+  
+  // استخراج id با استفاده از await
+  const { id } = await params;
 
   try {
     await prisma.specialty.delete({

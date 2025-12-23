@@ -1,19 +1,27 @@
 import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Clock, Tags, Wallet } from "lucide-react";
 import { getServiceBySlug, getServiceSlugs } from "@/lib/data/services";
 import RichTextRenderer from "@/components/common/RichTextRenderer";
 
 // Metadata per service
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const service = await getServiceBySlug(params.slug);
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params; // دریافت slug با await
+  const service = await getServiceBySlug(slug);
+
   if (!service || service.status !== "PUBLISHED") {
     return { title: "خدمت یافت نشد" };
   }
+
   const title = service.seoTitle || service.title;
-  const description = service.seoDescription || service.excerpt || service.subtitle || undefined;
-  const images = service.cover?.publicUrl ? [service.cover.publicUrl] : undefined;
+  const description =
+    service.seoDescription || service.excerpt || service.subtitle || undefined;
+  const images = service.cover?.publicUrl
+    ? [service.cover.publicUrl]
+    : undefined;
   return {
     title,
     description,
@@ -34,12 +42,20 @@ export async function generateStaticParams() {
 
 // RichText rendering moved to a shared helper; this page shows body as plain text per requirements.
 
-export default async function ServiceDetailsPage({ params }: { params: { slug: string } }) {
-  const service = await getServiceBySlug(params.slug);
+export default async function ServiceDetailsPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params; // دریافت slug با await
+  const service = await getServiceBySlug(slug);
+
   if (!service || service.status !== "PUBLISHED") return notFound();
 
-  const gallery = (service.media || []).map((m) => m.media).filter(Boolean) as { publicUrl: string | null; alt: string | null }[];
-
+  const gallery = (service.media || []).map((m) => m.media).filter(Boolean) as {
+    publicUrl: string | null;
+    alt: string | null;
+  }[];
   return (
     <div className="bg-background-2" dir="rtl">
       {/* Hero with Cover */}
@@ -80,9 +96,13 @@ export default async function ServiceDetailsPage({ params }: { params: { slug: s
           </div>
           {/* Mobile title + subtitle below image (no overlay, full-bleed) */}
           <div className="sm:hidden px-6 pt-4">
-            <h1 className="text-2xl font-extrabold font-yekan text-gray-900">{service.title}</h1>
+            <h1 className="text-2xl font-extrabold font-yekan text-gray-900">
+              {service.title}
+            </h1>
             {service.subtitle && (
-              <p className="mt-2 text-gray-600 font-yekan text-base leading-7">{service.subtitle}</p>
+              <p className="mt-2 text-gray-600 font-yekan text-base leading-7">
+                {service.subtitle}
+              </p>
             )}
           </div>
         </div>
@@ -104,12 +124,22 @@ export default async function ServiceDetailsPage({ params }: { params: { slug: s
         {/* Gallery */}
         {gallery.length > 0 && (
           <div className="mt-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 font-yekan">گالری تصاویر</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4 font-yekan">
+              گالری تصاویر
+            </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {gallery.slice(0, 9).map((img, idx) => (
-                <div key={idx} className="group relative aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-gray-200/70">
+                <div
+                  key={idx}
+                  className="group relative aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-gray-200/70"
+                >
                   {img.publicUrl ? (
-                    <Image src={img.publicUrl} alt={img.alt || service.title} fill className="object-cover object-center transition-transform duration-500 group-hover:scale-105" />
+                    <Image
+                      src={img.publicUrl}
+                      alt={img.alt || service.title}
+                      fill
+                      className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                    />
                   ) : (
                     <div className="w-full h-full bg-gray-100" />
                   )}
