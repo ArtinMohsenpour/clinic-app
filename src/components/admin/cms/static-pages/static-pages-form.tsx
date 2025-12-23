@@ -158,14 +158,43 @@ export default function PageForm({
           onBlur={handleSlugify}
           required
         />
-        <Field
-          label="اسلاگ (URL)"
-          value={slug}
-          onChange={setSlug}
-          required
-          inputProps={{ dir: "ltr" }}
-        />
+        <div>
+          <Field
+            label="اسلاگ (URL)"
+            value={slug}
+            onChange={setSlug}
+            required
+            inputProps={{ dir: "ltr" }}
+          />
+          <p className="text-base text-gray-500 my-2 pr-1" dir="rtl">
+            اسلاگ باید به انگلیسی و برای هر صفحه منحصر به فرد باشد. مثال:{" "}
+            <code dir="ltr" className="bg-gray-100 p-1 mt-1 rounded-md">
+              imprint
+            </code>
+            ,{" "}
+            <code dir="ltr" className="bg-gray-100 p-1 rounded-md">
+              contact-us
+            </code>
+            ,{" "}
+            <code dir="ltr" className="bg-gray-100 p-1 rounded-md">
+              privacy
+            </code>
+            ,{" "}
+            <code dir="ltr" className="bg-gray-100 p-1 rounded-md">
+              about
+            </code>
+            ,{" "}
+            <code dir="ltr" className="bg-gray-100 p-1 rounded-md">
+              clinic-intro
+            </code>
+            ,{" "}
+            <code dir="ltr" className="bg-gray-100 p-1 rounded-md">
+              patient-intake
+            </code>
+          </p>
+        </div>
       </div>
+      <div></div>
 
       <div>
         <label className="block text-sm font-medium mb-1">

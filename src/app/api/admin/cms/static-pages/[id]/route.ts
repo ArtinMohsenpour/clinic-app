@@ -141,6 +141,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<IdParam> }) {
     );
   }
   revalidateTag("static-pages");
+  revalidateTag("home-static-pages");
 
   return NextResponse.json({ ok: true });
 }
@@ -162,6 +163,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<IdParam> }) {
   }
 
   revalidateTag("static-pages");
+  revalidateTag("home-static-pages");
 
   return NextResponse.json({ ok: true });
 }

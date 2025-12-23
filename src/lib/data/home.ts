@@ -26,7 +26,7 @@ export const getHomeStaticPages = unstable_cache(
     });
   },
   ["home-static-pages"],
-  { tags: ["home-static-pages"] }
+  { tags: ["home-static-pages", "static-pages"] }
 );
 
 // 2. Services Section Data

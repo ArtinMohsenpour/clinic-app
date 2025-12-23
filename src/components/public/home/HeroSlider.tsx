@@ -26,13 +26,13 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
   const [current, setCurrent] = useState(0);
 
   // Auto-play functionality
-  // useEffect(() => {
-  //   if (slides.length <= 1) return;
-  //   const timer = setInterval(() => {
-  //     setCurrent((prev) => (prev + 1) % slides.length);
-  //   }, 6000); // Change slide every 6 seconds
-  //   return () => clearInterval(timer);
-  // }, [slides.length]);
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % slides.length);
+    }, 5000); // Change slide every 5 seconds
+    return () => clearInterval(timer);
+  }, [current, slides.length]);
 
   if (!slides || slides.length === 0) {
     return null;
@@ -44,7 +44,7 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
 
   return (
     <div
-      className="relative w-full h-[600px] sm:h-[700px] lg:h-[600px] overflow-hidden bg-gray-900 group font-yekan"
+      className="relative w-full h-[600px] sm:h-[700px] lg:h-[700px] overflow-hidden bg-gray-900 group font-yekan"
       dir="rtl"
     >
       {/* Slides */}
@@ -71,7 +71,7 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
           {/* Content Overlay */}
           <div className="absolute inset-0 flex items-center select-none ">
             <div className="container mx-auto px-6 sm:px-12 lg:px-60">
-              <div className="backdrop-blur-[2px] max-w-fit flex flex-col items-start bg-black/20 text-right px-5 py-5 shadow-black/40 shadow-lg  space-y-6 sm:space-y-8  rounded-3xl border-[1px] border-white/30">
+              <div className="backdrop-blur-[4px] max-w-fit flex flex-col items-start  text-right px-5 py-5 shadow-black/40 shadow-lg  space-y-6 sm:space-y-8  rounded-3xl border-[1px] border-white/30">
                 {/* Title */}
                 <h2 className="text-4xl sm:text-5xl lg:text-5xl font-bold text-[#ffffff] leading-tight drop-shadow-xl animate-in fade-in slide-in-from-right-8 duration-700">
                   {slide.title}
