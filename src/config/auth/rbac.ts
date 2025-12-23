@@ -23,6 +23,7 @@ export const ACCESS_MATRIX: Record<RoleId, readonly Section[]> = {
     "appointments",
     "messages",
     "medicine-inventory",
+    "staff-management",
     "profile",
     "cms",
     "settings",

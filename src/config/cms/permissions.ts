@@ -58,6 +58,7 @@ export const ROLE_PERMISSIONS: Record<RoleId, ReadonlyArray<Permission>> = {
     "appt.read",
     "appt.update",
     "audit.read",
+    "user.manage",
   ],
   it_manager: ["audit.read", "user.manage"],
 
