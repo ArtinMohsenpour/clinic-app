@@ -3,10 +3,13 @@
   "next": {
     "version": "15"
   },
+  "build": {
+    "location": "iran"
+  },
   "disks": [
     {
       "name": "uploads",
-      "mount": "/app/public/uploads"
+      "mountTo": "/app/public/uploads"
     }
   ]
 }
